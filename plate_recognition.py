@@ -26,13 +26,11 @@ INPUT_HEIGHT = 640
 
 pt.pytesseract.tesseract_cmd = r'C:/Users/ACER/AppData/Local/Tesseract-OCR/tesseract.exe'
 
-net = cv2.dnn.readNetFromONNX('C:/Users/ACER/yolov5/runs/train/Model15/weights/best.onnx')
+net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH\CODE/TA/TA-PLATE-RECOG/Epoch600/yolov5/runs/train/exp/weights/best.onnx')
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
 
-image_counter = 1
-plate_saved = {}
 
 def convert_image_yolo(image):
     # 1.CONVERT IMAGE TO YOLO FORMAT
@@ -58,8 +56,8 @@ def get_predictions_yolo(image, net):
 
 
 def drawings_box(img_resize, detections):
-    confidence_detect_target = 0.9
-    confidence_probability = 0.9
+    confidence_detect_target = 0.8
+    confidence_probability = 0.8
     image_width, image_height, image_depth = img_resize.shape
     x_scale = image_width/INPUT_WIDTH
     y_scale = image_height/INPUT_HEIGHT
@@ -89,30 +87,12 @@ def drawings_box(img_resize, detections):
     return index, boxes_np, confidences_np
 
 
-
-
-def draw_boxes(image, index, boxes_np, confidences_np):
-    for i in index:
-        box = boxes_np[i]
-        # plate_text = get_plate_text(image, boxes_np[i])
-        ss_object = screenshot_object(image, index, boxes_np[i], confidences_np)
-        time_in = time_enter(image, boxes_np[i])
-        threshold_result = threshold_img(ss_object)
-
-        x1,y1,w,h = box.astype('int')
-        
-        cv2.rectangle(image,(x1,y1),(x1+w,y1+h),(255,0,0),2)
-
-        cv2.putText(image, f'{confidences_np[i]:.2f}', (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-        # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
-    
-    return image
-
-
+image_counter = 1
+plate_saved = {}
 
 def screenshot_object(image, index, bbox, confidences_np):
     global image_counter
-    confidence_detect_target = 0.7
+    confidence_detect_target = 0.8
     x, y, w, h = bbox
     crop_img = image[y:y+h, x:x+w]
 
@@ -126,7 +106,7 @@ def screenshot_object(image, index, bbox, confidences_np):
                 # Save the image and set the flag in plate_saved
                 cv2.imwrite(filename, crop_img)
                 plate_saved[i] = True
-                print(plate_saved)
+                # print(plate_saved)
 
     return crop_img
 
@@ -143,7 +123,7 @@ def time_enter(image, bbox):
     # Convert the dictionary to a JSON string
     time_enter = json.dumps(time_dict)
 
-    print(time_enter)
+    # print(time_enter)
     
     return time_enter
 
@@ -188,11 +168,11 @@ def yolo_predictions(image, net):
 
     
 
-def threshold_img(img):
+def get_plate_number(image):
     # img = cv2.imread("C:/Ilham/KULIAH/CODE/TA/auto-plate-recog-kaggle/images/test/362.E 6525 SF-09-21.jpeg")
     # baca perintah image
-    image_th = img
-
+    regex = "^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$"
+    image_th = image
 
     # Konversi ke citra grayscale
     gray = cv2.cvtColor(image_th, cv2.COLOR_BGR2GRAY)
@@ -200,21 +180,31 @@ def threshold_img(img):
     # Thresholding value dengan cv.threshold
     thresh_value, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    # Operasi dilasi
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    dilated = cv2.dilate(thresh, kernel, iterations=1)
+    plate_number_text = pt.image_to_string(thresh, config='--psm 8')
 
-    text_img = pt.image_to_string(image_th, config='--psm 8')
-    print(text_img)
+    if re.match(regex, plate_number_text):
+        print(plate_number_text)
+    
+    return plate_number_text, thresh
 
-    text_thresh = pt.image_to_string(thresh, config='--psm 8')
-    print(text_thresh)
 
-    text_dilated = pt.image_to_string(dilated, config='--psm 8')
-    print(text_dilated)
 
-    return text_img, text_thresh, text_dilated
+def draw_boxes(image, index, boxes_np, confidences_np):
+    for i in index:
+        box = boxes_np[i]
+        # plate_text = get_plate_text(image, boxes_np[i])
+        ss_object = screenshot_object(image, index, boxes_np[i], confidences_np)
+        time_in = time_enter(image, boxes_np[i])
+        threshold_result = get_plate_number(ss_object)
 
+        x1,y1,w,h = box.astype('int')
+        
+        cv2.rectangle(image,(x1,y1),(x1+w,y1+h),(255,0,0),2)
+
+        cv2.putText(image, f'{confidences_np[i]:.2f}', (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+        # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
+    
+    return image
 
 
 
