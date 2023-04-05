@@ -6,6 +6,7 @@ import re
 import json
 import time
 from datetime import datetime, timedelta
+import csv
 
 INPUT_WIDTH =  640
 INPUT_HEIGHT = 640
@@ -101,18 +102,11 @@ def screenshot_object(image, index, bbox, confidences_np):
 
 def time_enter(image, bbox):
     x,y,w,h = bbox
-    time_in = datetime.now().strftime('%H:%M:%S')
-    cv2.putText(image, time_in, (x+50,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-    
-    # Create a dictionary with the time_in value
-    time_dict = {"time_in": time_in}
-    
-    # Convert the dictionary to a JSON string
-    time_enter = json.dumps(time_dict)
+    time_in = datetime.now().strftime('%H:%M:%S %d-%m-%Y')
 
-    # print(time_enter)
-    
-    return time_enter
+    cv2.putText(image, time_in, (x+50,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
+        
+    return time_in
 
 
 
@@ -146,9 +140,6 @@ def yolo_predictions(image, net):
     
     # result_image = draw_boxes(image, *drawings_box(input_image, detections))
     result_image = draw_boxes(image, boxes_np, confidences_np,index)
-    
-    # save data 
-    # save_data_user(image, boxes_np, index)
 
     return result_image
 
@@ -156,9 +147,6 @@ def yolo_predictions(image, net):
     
 
 def get_plate_number(image):
-    # img = cv2.imread("C:/Ilham/KULIAH/CODE/TA/auto-plate-recog-kaggle/images/test/362.E 6525 SF-09-21.jpeg")
-    # baca perintah image
-    regex = "^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$"
     image_th = image
 
     # Konversi ke citra grayscale
@@ -167,12 +155,85 @@ def get_plate_number(image):
     # Thresholding value dengan cv.threshold
     thresh_value, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
-    plate_number_text = pt.image_to_string(thresh, config='--psm 8')
+    get_plate = pt.image_to_string(thresh, config='--psm 8')
 
-    if re.match(regex, plate_number_text):
-        print(plate_number_text)
+    regex = "^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$"
     
-    return plate_number_text, thresh
+    
+    ocr_plate_number = re.match(regex, get_plate)
+
+    if ocr_plate_number:
+        return ocr_plate_number
+
+
+
+def save_plate_in(get_plate, time_in):
+
+    if get_plate == None:
+        pass
+    else:
+        # check if plate number already exist in csv file
+        with open('vehicle_in.csv', 'r') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if row[0] == get_plate.group() or row[1] == time_in:
+                    # print("same plate", row[0], "at ", row[1])
+                    return
+                
+        plate_dict = {"plate_number": get_plate.group(), 
+                    "time_in": time_in}
+        
+        with open('vehicle_in.csv', 'a', newline='') as f:
+            w = csv.DictWriter(f, plate_dict.keys())
+            w.writerow(plate_dict)
+
+    return plate_dict
+
+
+
+
+def match_plate_out(get_plate, time_out):
+    if get_plate == None:
+        pass
+    else:
+        with open('vehicle_in.csv', 'r') as f_in:
+            reader_in = csv.reader(f_in)
+            for row in reader_in:
+                if row[0] == get_plate.group():
+
+                    with open('vehicle_out.csv', 'r') as f_out_r:
+                        reader_out_r = csv.reader(f_out_r)
+                        for row_out_r in reader_out_r:
+                            if row_out_r and row_out_r[0] == get_plate.group():
+                                # print("same plate", row_out_r[0], "at ", row[1])
+                                return
+                            
+                            else:
+                                plate_dict = {"plate_number": get_plate.group(),
+                                    "time_in": row[1], 
+                                    "time_out": time_out}
+                                print(plate_dict)
+
+                                with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
+                                    reader_out_r_r = csv.reader(f_out_r_r)
+                                    for row_out_r_r in reader_out_r_r:
+                                        if row_out_r_r and row_out_r_r[0] == get_plate.group():
+                                            print("same plate", row_out_r_r[0], "at ", row_out_r_r[1])
+                                            return
+                                    
+                                with open('vehicle_out.csv', 'a', newline='') as f_out_r_w:
+                                    w = csv.DictWriter(f_out_r_w, plate_dict.keys())
+                                    if f_out_r_w.tell() == 0:
+                                        w.writeheader()
+                                    w.writerow(plate_dict)
+                                    print("match")
+                                    return
+        print('no match')
+                    
+
+
+
+    
 
 
 
@@ -182,7 +243,11 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         # plate_text = get_plate_text(image, boxes_np[i])
         ss_object = screenshot_object(image, index, boxes_np[i], confidences_np)
         time_in = time_enter(image, boxes_np[i])
-        threshold_result = get_plate_number(ss_object)
+        get_plate = get_plate_number(ss_object)
+
+        # save_plate_number = save_plate_in(get_plate, time_in)
+
+        check_plate = match_plate_out(get_plate, time_in)
 
         x1,y1,w,h = box.astype('int')
         
