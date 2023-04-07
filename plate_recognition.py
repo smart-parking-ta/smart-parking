@@ -167,6 +167,7 @@ def get_plate_number(image):
 
 
 
+
 def save_plate_in(get_plate, time_in):
 
     if get_plate == None:
@@ -182,12 +183,13 @@ def save_plate_in(get_plate, time_in):
                 
         plate_dict = {"plate_number": get_plate.group(), 
                     "time_in": time_in}
+        print(plate_dict)
         
         with open('vehicle_in.csv', 'a', newline='') as f:
             w = csv.DictWriter(f, plate_dict.keys())
             w.writerow(plate_dict)
 
-    return plate_dict
+    # return plate_dict
 
 
 
@@ -199,36 +201,39 @@ def match_plate_out(get_plate, time_out):
         with open('vehicle_in.csv', 'r') as f_in:
             reader_in = csv.reader(f_in)
             for row in reader_in:
+                # print(get_plate.group(), row[0])
                 if row[0] == get_plate.group():
 
                     with open('vehicle_out.csv', 'r') as f_out_r:
                         reader_out_r = csv.reader(f_out_r)
+                        # print("plate out", get_plate.group())
                         for row_out_r in reader_out_r:
                             if row_out_r and row_out_r[0] == get_plate.group():
-                                # print("same plate", row_out_r[0], "at ", row[1])
-                                return
+                                print("same plate", row_out_r[0], "at ", row_out_r[2])
+                                break
                             
-                            else:
-                                plate_dict = {"plate_number": get_plate.group(),
-                                    "time_in": row[1], 
-                                    "time_out": time_out}
-                                print(plate_dict)
+                            # else:
+                        # print("plate out", get_plate.group())
+                        plate_dict = {"plate_number": get_plate.group(),
+                            "time_in": row[1], 
+                            "time_out": time_out}
 
-                                with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
-                                    reader_out_r_r = csv.reader(f_out_r_r)
-                                    for row_out_r_r in reader_out_r_r:
-                                        if row_out_r_r and row_out_r_r[0] == get_plate.group():
-                                            print("same plate", row_out_r_r[0], "at ", row_out_r_r[1])
-                                            return
-                                    
-                                with open('vehicle_out.csv', 'a', newline='') as f_out_r_w:
-                                    w = csv.DictWriter(f_out_r_w, plate_dict.keys())
-                                    if f_out_r_w.tell() == 0:
-                                        w.writeheader()
-                                    w.writerow(plate_dict)
-                                    print("match")
+                        with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
+                            reader_out_r_r = csv.reader(f_out_r_r)
+                            for row_out_r_r in reader_out_r_r:
+                                if row_out_r_r and row_out_r_r[0] == get_plate.group():
+                                    print("same plate", row_out_r_r[0], "at ", row_out_r_r[2])
                                     return
-        print('no match')
+                            
+                            
+                        with open('vehicle_out.csv', 'a', newline='') as f_out_r_w:
+                            w = csv.DictWriter(f_out_r_w, plate_dict.keys())
+                            if f_out_r_w.tell() == 0:
+                                w.writeheader()
+                            w.writerow(plate_dict)
+                            print("saved plate ", get_plate.group(), "at ", time_out)
+                            return
+        print('no match ')
                     
 
 
@@ -260,9 +265,10 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 
 
 
+
 # MAIN
 def main():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(1)
     while True:
         ret, frame = cap.read()
     
