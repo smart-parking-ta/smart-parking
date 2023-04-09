@@ -110,7 +110,7 @@ async function authenticateUserOut(plat_number) {
       `UPDATE orders_detail SET time_exit = NOW() WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
 
-    //ambil bagian jam saja dari time_exit dan time_enter
+    //ambil bagian dalam bentuk miliseconds dari time_exit dan time_enter
     const hour_time_exit_result = await pool.query(
       `SELECT EXTRACT(EPOCH FROM time_exit) * 1000 AS time_exit FROM orders_detail WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
