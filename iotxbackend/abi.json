@@ -1,0 +1,101 @@
+[
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_user_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_order_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_time_enter",
+				"type": "uint256"
+			}
+		],
+		"name": "addOrder",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_order_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_time_exit",
+				"type": "uint256"
+			}
+		],
+		"name": "insertExit",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "ordersDetail",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "time_enter",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "time_exit",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_user_id",
+				"type": "uint256"
+			}
+		],
+		"name": "userOrderInfo",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "user_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "plat_number",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256[]",
+				"name": "order_id",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]

@@ -2,6 +2,36 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
 const app = express();
+const abi = require("./abi.json");
+const Web3 = require("web3");
+const web3 = new Web3(
+  "https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD"
+);
+
+const contractAddress = "0xF63C16FEfA70cee3e7751822E896400ef24A59DB";
+
+const contract = new web3.eth.Contract(abi, contractAddress);
+
+const addOrder = async () => {
+  const accountAddress = "0x8De119dEc454624DcED3a48030d697b6E597446F";
+  const privateKey =
+    "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
+
+  const tx = {
+    from: accountAddress,
+    to: contractAddress,
+    gas: 150000,
+    data: contract.methods.addOrder(1, 123, 500).encodeABI(),
+  };
+
+  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+  web3.eth
+    .sendSignedTransaction(signature.rawTransaction)
+    .on("receipt", async (receipt) => {
+      console.log(receipt);
+    });
+};
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -173,6 +203,8 @@ async function authenticateUserIn(plat_number) {
     await pool.query(
       `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${result.rows[0].user_id}', NOW(), 'NOT PAID') RETURNING *`
     );
+
+    await addOrder();
 
     //jika tidak ada error, maka dapat dilakukan commit
     await pool.query("COMMIT;");
