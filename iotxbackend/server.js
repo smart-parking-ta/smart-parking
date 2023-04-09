@@ -7,14 +7,13 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //endpoint buat tes bisa terhubung ke database atau tidak
+// app.get("/", async (req, res) => {
+//   const result_query = await pool.query("SELECT * FROM parking_users");
+//   res.json(result_query.rows[0]);
+// });
+
 app.get("/", (req, res) => {
-  pool.query("SELECT NOW()", (err, res) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log(`PostgreSQL connected: ${res.rows[0].now}`);
-    }
-  });
+  res.json("HOORAY");
 });
 
 //endpoint untuk login
@@ -24,11 +23,11 @@ app.post("/checkIn", async (req, res) => {
 
   try {
     const authenticatedUser = await authenticateUserIn(data.plat_number);
-    res.json("check-in berhasil");
+    res.json(authenticatedUser).status(201);
     return authenticatedUser;
     //fungsi kirim data ke database
   } catch (err) {
-    res.json("check-in gagal");
+    res.json("check-in gagal").status(404);
     return err;
   }
 });
@@ -49,23 +48,23 @@ app.post("/checkOut", async (req, res) => {
     } else {
       //jika saldo user > dari price maka kurangi saldo user dengan price
       await pool.query(
-        `UPDATE parkingUsers SET balance = balance - ${price_rent_parking} WHERE user_id = '${authenticatedUser.user_id}'`
+        `UPDATE parking_users SET balance = balance - ${price_rent_parking} WHERE user_id = '${authenticatedUser.user_id}'`
       );
 
       //update status booking menjadi paid
       await pool.query(
-        `UPDATE ordersdetail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
+        `UPDATE orders_detail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
       );
     }
 
     //buat testing
     pool.query("COMMIT;");
 
-    res.json("check-out berhasil");
+    res.json("check-out berhasil").status(201);
     return "check-out berhasil";
   } catch (err) {
     pool.query("ROLLBACK;");
-    res.json("check-out gagal");
+    res.json("check-out gagal").status(404);
     return err;
   }
 });
@@ -84,7 +83,7 @@ async function authenticateUserOut(plat_number) {
 
     //memastikan kalau plat_number user terdaftar di database
     const result = await pool.query(
-      `SELECT * FROM parkingUsers WHERE plat_number = '${plat_number}'`
+      `SELECT * FROM parking_users WHERE plat_number = '${plat_number}'`
     );
 
     //error handler jika plat_number tidak terdaftar di database
@@ -94,7 +93,7 @@ async function authenticateUserOut(plat_number) {
 
     //mengambil data spesifik renting user terhadap sewa parkir
     const authenticate_user_result = await pool.query(
-      `SELECT * FROM ordersdetail WHERE user_id = '${result.rows[0].user_id}' AND status = 'NOT PAID'`
+      `SELECT * FROM orders_detail WHERE user_id = '${result.rows[0].user_id}' AND status = 'NOT PAID'`
     );
 
     //error handler jika user tidak memiliki data sewa parkir yang belum dibayar
@@ -108,15 +107,15 @@ async function authenticateUserOut(plat_number) {
 
     //query untuk edit time_exit
     await pool.query(
-      `UPDATE ordersdetail SET time_exit = NOW() WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
+      `UPDATE orders_detail SET time_exit = NOW() WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
 
     //ambil bagian jam saja dari time_exit dan time_enter
     const hour_time_exit_result = await pool.query(
-      `SELECT EXTRACT(EPOCH FROM time_exit) * 1000 AS time_exit FROM ordersdetail WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
+      `SELECT EXTRACT(EPOCH FROM time_exit) * 1000 AS time_exit FROM orders_detail WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
     const hour_time_enter_result = await pool.query(
-      `SELECT EXTRACT(EPOCH FROM time_enter) * 1000 AS time_enter FROM ordersdetail WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
+      `SELECT EXTRACT(EPOCH FROM time_enter) * 1000 AS time_enter FROM orders_detail WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
 
     // query untuk edit price
@@ -127,7 +126,7 @@ async function authenticateUserOut(plat_number) {
 
     //query untuk update harga tiket parkir
     await pool.query(
-      `UPDATE ordersdetail SET price = ${harga_tiket_parkir} WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
+      `UPDATE orders_detail SET price = ${harga_tiket_parkir} WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
 
     //mengumpulkan data agar di tahap selanjutnya lebih mudah di-manipulasi
@@ -163,16 +162,16 @@ async function authenticateUserIn(plat_number) {
     await pool.query("BEGIN;");
 
     const result = await pool.query(
-      `SELECT * FROM parkingUsers WHERE plat_number = '${plat_number}'`
+      `SELECT * FROM parking_users WHERE plat_number = '${plat_number}'`
     );
 
     if (!result || !result.rows || !result.rows.length) {
       return "authenticate user check-in failed";
     }
 
-    //insert data ke tabel ordersdetail dengan time_enter = NOW()
+    //insert data ke tabel orders_detail dengan time_enter = NOW()
     await pool.query(
-      `INSERT INTO ordersdetail (user_id, time_enter, status) VALUES ('${result.rows[0].user_id}', NOW(), 'NOT PAID') RETURNING *`
+      `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${result.rows[0].user_id}', NOW(), 'NOT PAID') RETURNING *`
     );
 
     //jika tidak ada error, maka dapat dilakukan commit
@@ -203,6 +202,6 @@ async function calculatePrice(time_exit, time_enter) {
   }
 }
 
-app.listen(3000, () => {
-  console.log("Server started on port 3000");
+app.listen(process.env.PORT, () => {
+  console.log(`Server started on port ${process.env.PORT}`);
 });
