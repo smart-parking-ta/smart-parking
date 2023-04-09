@@ -8,20 +8,19 @@ const web3 = new Web3(
   "https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD"
 );
 
-const contractAddress = "0xF63C16FEfA70cee3e7751822E896400ef24A59DB";
+const contractAddress = "0xf8d3A6F3154Ea108f11424CA8Bc401012E3dde07";
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
 const addOrder = async () => {
   const accountAddress = "0x8De119dEc454624DcED3a48030d697b6E597446F";
-  const privateKey =
-    "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
+  const privateKey = "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
 
   const tx = {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods.addOrder(1, 123, 500).encodeABI(),
+    data: contract.methods.addOrder(1, 123, 500, 0).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
