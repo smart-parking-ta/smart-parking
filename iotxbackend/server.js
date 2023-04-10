@@ -8,20 +8,64 @@ const web3 = new Web3(
   "https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD"
 );
 
-const contractAddress = "0xF63C16FEfA70cee3e7751822E896400ef24A59DB";
+const contractAddress = "0xf8d3A6F3154Ea108f11424CA8Bc401012E3dde07";
+const accountAddress = "0x8De119dEc454624DcED3a48030d697b6E597446F";
+const privateKey = "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
 const addOrder = async () => {
-  const accountAddress = "0x8De119dEc454624DcED3a48030d697b6E597446F";
-  const privateKey =
-    "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
+  const user_id = 1;
+  const order_id = 123;
+  const time_enter = 500; // type unix timestamp
+  const status = 0; // type enum  0: not paid / 1: paid
 
   const tx = {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods.addOrder(1, 123, 500).encodeABI(),
+    data: contract.methods.addOrder(user_id, order_id, time_enter, status).encodeABI(),
+  };
+
+  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+  web3.eth
+    .sendSignedTransaction(signature.rawTransaction)
+    .on("receipt", async (receipt) => {
+      console.log(receipt);
+    });
+};
+
+const userRegister = async () => {
+  const user_id = 1;
+  const plat_number = "KT 12131";
+
+  const tx = {
+    from: accountAddress,
+    to: contractAddress,
+    gas: 150000,
+    data: contract.methods.userRegister(user_id, plat_number).encodeABI(),
+  };
+
+  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+  web3.eth
+    .sendSignedTransaction(signature.rawTransaction)
+    .on("receipt", async (receipt) => {
+      console.log(receipt);
+    });
+};
+const insertExit = async () => {
+  const order_id = 1;
+  const time_exit = 81721872; // type unix timestamp
+  const price = 5000;
+  const status = 1; // type enum  0: not paid / 1: paid
+
+  const tx = {
+    from: accountAddress,
+    to: contractAddress,
+    gas: 150000,
+    data: contract.methods.insertExit(order_id, time_exit, price, status).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
