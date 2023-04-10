@@ -47,57 +47,76 @@ app.get("/", (req, res) => {
 });
 
 //endpoint untuk login
-app.post("/checkIn", async (req, res) => {
-  //mengambil data dari request.body
-  const data = req.body;
+app.post(
+  "/checkIn",
+  async (req, res, next) => {
+    //mengambil data dari request.body
+    const data = req.body;
 
-  try {
-    const authenticatedUser = await authenticateUserIn(data.plat_number);
-    res.json(authenticatedUser).status(201);
-    return authenticatedUser;
-    //fungsi kirim data ke database
-  } catch (err) {
-    res.json("check-in gagal").status(404);
-    return err;
-  }
-});
+    try {
+      const authenticatedUser = await authenticateUserIn(data.plat_number);
 
-app.post("/checkOut", async (req, res) => {
-  //mengambil data dari request.body
-  const data = req.body;
-
-  try {
-    const authenticatedUser = await authenticateUserOut(data.plat_number);
-    const price_rent_parking = authenticatedUser.price;
-
-    pool.query("BEGIN;");
-    //jika saldo user < dari price print saldo tidak cukup
-    if (authenticatedUser.balance < price_rent_parking) {
-      res.json("saldo tidak cukup");
-      return "saldo tidak cukup";
-    } else {
-      //jika saldo user > dari price maka kurangi saldo user dengan price
-      await pool.query(
-        `UPDATE parking_users SET balance = balance - ${price_rent_parking} WHERE user_id = '${authenticatedUser.user_id}'`
-      );
-
-      //update status booking menjadi paid
-      await pool.query(
-        `UPDATE orders_detail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
-      );
+      //jika user tidak ditemukan
+      if (typeof authenticatedUser !== "object") {
+        throw new Error(authenticatedUser);
+      }
+      next();
+    } catch (err) {
+      res.status(401).send(err.message).end();
     }
-
-    //buat testing
-    pool.query("COMMIT;");
-
-    res.json("check-out berhasil").status(201);
-    return "check-out berhasil";
-  } catch (err) {
-    pool.query("ROLLBACK;");
-    res.json("check-out gagal").status(404);
-    return err;
+  },
+  async (req, res) => {
+    //fungsi untuk mengirim data ke blockchain network
+    // await addOrder();
+    res.status(201).send("check in berhasil").end();
   }
-});
+);
+
+app.post(
+  "/checkOut",
+  async (req, res, next) => {
+    //mengambil data dari request.body
+    const data = req.body;
+
+    try {
+      const authenticatedUser = await authenticateUserOut(data.plat_number);
+
+      if (typeof authenticatedUser !== "object") {
+        throw new Error(authenticatedUser);
+      }
+      const price_rent_parking = authenticatedUser.price;
+
+      pool.query("BEGIN;");
+      //jika saldo user < dari price print saldo tidak cukup
+      if (authenticatedUser.balance < price_rent_parking) {
+        res.status(402).send("saldo tidak cukup");
+        return;
+      } else {
+        //jika saldo user > dari price maka kurangi saldo user dengan price
+        await pool.query(
+          `UPDATE parking_users SET balance = balance - ${price_rent_parking} WHERE user_id = '${authenticatedUser.user_id}'`
+        );
+
+        //update status booking menjadi paid
+        await pool.query(
+          `UPDATE orders_detail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
+        );
+      }
+
+      next();
+    } catch (err) {
+      pool.query("ROLLBACK;");
+      res.status(401).send(err.message).end();
+    }
+  },
+  async (req, res) => {
+    //fungsi untuk mengirim data ke blockchain network
+    // await addOrder();
+
+    pool.query("COMMIT;");
+    res.status(202).send("check-out berhasil");
+  }
+);
 
 //fungsi untuk otentikasi user saat keluar gerbang
 async function authenticateUserOut(plat_number) {
@@ -118,7 +137,7 @@ async function authenticateUserOut(plat_number) {
 
     //error handler jika plat_number tidak terdaftar di database
     if (!result || !result.rows || !result.rows.length) {
-      return "authenticate user check-out failed";
+      throw new Error("Unauthorized User");
     }
 
     //mengambil data spesifik renting user terhadap sewa parkir
@@ -132,7 +151,7 @@ async function authenticateUserOut(plat_number) {
       !authenticate_user_result.rows ||
       !authenticate_user_result.rows.length
     ) {
-      return "authenticate user check-out failed";
+      throw new Error("there is no booking data from the user");
     }
 
     //query untuk edit time_exit
@@ -154,6 +173,10 @@ async function authenticateUserOut(plat_number) {
       hour_time_enter_result.rows[0].time_enter
     );
 
+    if (harga_tiket_parkir == null) {
+      throw new Error("Error in calculate price");
+    }
+
     //query untuk update harga tiket parkir
     await pool.query(
       `UPDATE orders_detail SET price = ${harga_tiket_parkir} WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
@@ -174,7 +197,7 @@ async function authenticateUserOut(plat_number) {
     return user_data;
   } catch (err) {
     pool.query("ROLLBACK;");
-    return err;
+    return err.message;
   }
 }
 
@@ -196,7 +219,7 @@ async function authenticateUserIn(plat_number) {
     );
 
     if (!result || !result.rows || !result.rows.length) {
-      return "authenticate user check-in failed";
+      throw new Error("Unauthorized user");
     }
 
     //insert data ke tabel orders_detail dengan time_enter = NOW()
@@ -204,15 +227,13 @@ async function authenticateUserIn(plat_number) {
       `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${result.rows[0].user_id}', NOW(), 'NOT PAID') RETURNING *`
     );
 
-    await addOrder();
-
     //jika tidak ada error, maka dapat dilakukan commit
     await pool.query("COMMIT;");
     return result.rows[0];
   } catch (err) {
     //jika ada error, maka transaksi akan dirollback
     await pool.query("ROLLBACK;");
-    return err;
+    return err.message;
   }
 }
 
@@ -230,7 +251,7 @@ async function calculatePrice(time_exit, time_enter) {
     const price = 4000 + (diffInHours - 1) * 2000;
     return price;
   } catch (err) {
-    return err.message;
+    return;
   }
 }
 
