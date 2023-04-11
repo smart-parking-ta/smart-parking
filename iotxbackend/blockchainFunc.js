@@ -1,11 +1,9 @@
 const abi = require("./abi.json");
 const Web3 = require("web3");
-const web3 = new Web3(
-  "https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD"
-);
+const web3 = new Web3(window.ethereum);
 require("dotenv").config();
 
-const contractAddress = process.env.CONTRACT_ADDRESS;
+const contractAddress = "0x01E42785E82bf8E037B0a3DB01EC0d47281fdCce";
 const accountAddress = process.env.ACCOUNT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 
