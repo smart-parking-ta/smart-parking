@@ -52,24 +52,34 @@ app.post(
 
       next();
     } catch (err) {
-      pool.query("ROLLBACK;");
+      await pool.query("ROLLBACK;");
       res.status(401).send(err.message).end();
     }
   },
   async (req, res) => {
-    let date_when_check_in = new Date(req.insert_result_check_in.time_enter);
-    let time_enter_unixTimeStamp = Math.floor(
-      date_when_check_in.getTime() / 1000
-    );
-    // fungsi untuk mengirim data ke blockchain network
-    await addOrder(
-      req.insert_result_check_in.user_id,
-      req.insert_result_check_in.booking_id,
-      time_enter_unixTimeStamp
-    );
+    try {
+      //mengubah waktu dengan format timestamp menjadi unix timestamp
+      let date_when_check_in = new Date(req.insert_result_check_in.time_enter);
+      let time_enter_unixTimeStamp = Math.floor(
+        date_when_check_in.getTime() / 1000
+      );
 
-    await pool.query("COMMIT;");
-    res.status(201).send("check in berhasil").end();
+      //buat debugging
+      console.log("TIME ENTER UNIX TIMESTAMP: ", time_enter_unixTimeStamp);
+
+      // fungsi untuk mengirim data ke blockchain network
+      await addOrder(
+        req.insert_result_check_in.user_id,
+        req.insert_result_check_in.booking_id,
+        time_enter_unixTimeStamp
+      );
+
+      await pool.query("COMMIT;");
+      res.status(201).send("check in berhasil").end();
+    } catch (err) {
+      await pool.query("ROLLBACK;");
+      res.status(401).send(err.message).end();
+    }
   }
 );
 
@@ -82,13 +92,14 @@ app.post(
 
     try {
       const authenticatedUser = await authenticateUserOut(data.plat_number);
-
+      //buat debugging
+      console.log("authenticatedUser ketika checkout ", authenticatedUser);
       if (typeof authenticatedUser !== "object") {
         throw new Error(authenticatedUser);
       }
       const price_rent_parking = authenticatedUser.price;
 
-      pool.query("BEGIN;");
+      await pool.query("BEGIN;");
       //jika saldo user < dari price print saldo tidak cukup
       if (authenticatedUser.balance < price_rent_parking) {
         res.status(402).send("saldo tidak cukup");
@@ -104,19 +115,38 @@ app.post(
           `UPDATE orders_detail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
         );
       }
-
+      req.booking_data_to_alter = authenticatedUser;
       next();
     } catch (err) {
-      pool.query("ROLLBACK;");
+      await pool.query("ROLLBACK;");
       res.status(401).send(err.message).end();
     }
   },
   async (req, res) => {
-    //fungsi untuk mengirim data ke blockchain network
-    // await addOrder();
+    try {
+      //mengubah waktu time exit dengan format timestamp menjadi unix timestamp
 
-    pool.query("COMMIT;");
-    res.status(202).send("check-out berhasil");
+      let date_when_check_out = new Date(req.booking_data_to_alter.time_exit);
+      let time_exit_unixTimeStamp = Math.floor(
+        date_when_check_out.getTime() / 1000
+      );
+
+      //buat debugging
+      console.log("TIME EXIT UNIX TIMESTAMP: ", time_exit_unixTimeStamp);
+
+      //fungsi untuk mengirim data ke blockchain network
+      await insertExit(
+        req.booking_data_to_alter.booking_id,
+        time_exit_unixTimeStamp,
+        req.booking_data_to_alter.price
+      );
+
+      await pool.query("COMMIT;");
+      res.status(202).send("check-out berhasil");
+    } catch (err) {
+      await pool.query("ROLLBACK;");
+      res.status(401).send(err.message).end();
+    }
   }
 );
 
@@ -130,7 +160,7 @@ async function authenticateUserOut(plat_number) {
       throw new Error("plat_number must be a string");
     }
 
-    pool.query("BEGIN;");
+    await pool.query("BEGIN;");
 
     //memastikan kalau plat_number user terdaftar di database
     const result = await pool.query(
@@ -184,21 +214,25 @@ async function authenticateUserOut(plat_number) {
       `UPDATE orders_detail SET price = ${harga_tiket_parkir} WHERE booking_id = '${authenticate_user_result.rows[0].booking_id}'`
     );
 
+    //mengambil data spesifik renting user terhadap sewa parkir
+    const recent_authenticate_user_result = await pool.query(
+      `SELECT * FROM orders_detail WHERE user_id = '${result.rows[0].user_id}' AND status = 'NOT PAID'`
+    );
     //mengumpulkan data agar di tahap selanjutnya lebih mudah di-manipulasi
     const user_data = {
-      booking_id: authenticate_user_result.rows[0].booking_id,
-      user_id: authenticate_user_result.rows[0].user_id,
-      time_enter: authenticate_user_result.rows[0].time_enter,
-      time_exit: authenticate_user_result.rows[0].time_exit,
-      price: authenticate_user_result.rows[0].price,
-      status: authenticate_user_result.rows[0].status,
+      booking_id: recent_authenticate_user_result.rows[0].booking_id,
+      user_id: recent_authenticate_user_result.rows[0].user_id,
+      time_enter: recent_authenticate_user_result.rows[0].time_enter,
+      time_exit: recent_authenticate_user_result.rows[0].time_exit,
+      price: recent_authenticate_user_result.rows[0].price,
+      status: recent_authenticate_user_result.rows[0].status,
       balance: result.rows[0].balance,
     };
 
-    pool.query("COMMIT;");
+    await pool.query("COMMIT;");
     return user_data;
   } catch (err) {
-    pool.query("ROLLBACK;");
+    await pool.query("ROLLBACK;");
     return err.message;
   }
 }
@@ -223,8 +257,6 @@ async function authenticateUserIn(plat_number) {
 
     return result.rows[0];
   } catch (err) {
-    //jika ada error, maka transaksi akan dirollback --> dicomment karena mau migrasi kode
-    // await pool.query("ROLLBACK;");
     return err.message;
   }
 }

@@ -48,12 +48,7 @@ const userRegister = async (user_id, plat_number) => {
     });
 };
 
-const insertExit = async () => {
-  const order_id = 1;
-  const time_exit = 81721872; // type unix timestamp
-  const price = 5000;
-  const status = 1; // type enum  0: not paid / 1: paid
-
+const insertExit = async (order_id, time_exit, price, status = 1) => {
   const tx = {
     from: accountAddress,
     to: contractAddress,
