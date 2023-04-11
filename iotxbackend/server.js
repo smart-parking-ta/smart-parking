@@ -1,82 +1,10 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
+const { addOrder, userRegister, insertExit } = require("./blockchainFunc");
 const app = express();
-const abi = require("./abi.json");
-const Web3 = require("web3");
-const web3 = new Web3(
-  "https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD"
-);
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-
-const contractAddress = "0xf8d3A6F3154Ea108f11424CA8Bc401012E3dde07";
-const accountAddress = "0x8De119dEc454624DcED3a48030d697b6E597446F";
-const privateKey =
-  "0190a15c2c10ee296432c781af4db3ce21668960155c516843102b728a03c0a0";
-
-const contract = new web3.eth.Contract(abi, contractAddress);
-
-const addOrder = async (user_id, order_id, time_enter, status = 0) => {
-  //ngga ada parameter price karena dari fungsi blockchain itu udah add 4000
-  const tx = {
-    from: accountAddress,
-    to: contractAddress,
-    gas: 150000,
-    data: contract.methods
-      .addOrder(user_id, order_id, time_enter, status)
-      .encodeABI(),
-  };
-
-  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-  web3.eth
-    .sendSignedTransaction(signature.rawTransaction)
-    .on("receipt", async (receipt) => {
-      console.log(receipt);
-    });
-};
-
-const userRegister = async (user_id, plat_number) => {
-  const tx = {
-    from: accountAddress,
-    to: contractAddress,
-    gas: 150000,
-    data: contract.methods.userRegister(user_id, plat_number).encodeABI(),
-  };
-
-  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-  web3.eth
-    .sendSignedTransaction(signature.rawTransaction)
-    .on("receipt", async (receipt) => {
-      console.log(receipt);
-    });
-};
-
-const insertExit = async () => {
-  const order_id = 1;
-  const time_exit = 81721872; // type unix timestamp
-  const price = 5000;
-  const status = 1; // type enum  0: not paid / 1: paid
-
-  const tx = {
-    from: accountAddress,
-    to: contractAddress,
-    gas: 150000,
-    data: contract.methods
-      .insertExit(order_id, time_exit, price, status)
-      .encodeABI(),
-  };
-
-  const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-  web3.eth
-    .sendSignedTransaction(signature.rawTransaction)
-    .on("receipt", async (receipt) => {
-      console.log(receipt);
-    });
-};
 
 //endpoint buat tes bisa terhubung ke database atau tidak
 // app.get("/", async (req, res) => {
@@ -89,14 +17,14 @@ const insertExit = async () => {
 //   res.json("HOORAY");
 // });
 
-//Nanti fungsi ini digabung sama api endpoint register
+//Nanti fungsi ini digabung sama api backend endpoint register
 // app.use(async function (req, res, next) {
 //   await userRegister(1, "DK1234AB");
 //   console.log("user registered");
 //   next();
 // });
 
-//endpoint untuk login
+//endpoint untuk login users
 app.post(
   "/checkIn",
   async (req, res, next) => {
@@ -129,18 +57,23 @@ app.post(
     }
   },
   async (req, res) => {
+    let date_when_check_in = new Date(req.insert_result_check_in.time_enter);
+    let time_enter_unixTimeStamp = Math.floor(
+      date_when_check_in.getTime() / 1000
+    );
     // fungsi untuk mengirim data ke blockchain network
-    // await addOrder(
-    //   req.insert_result_check_in.user_id,
-    //   req.insert_result_check_in.booking_id,
-    //   req.insert_result_check_in.time_enter
-    // );
+    await addOrder(
+      req.insert_result_check_in.user_id,
+      req.insert_result_check_in.booking_id,
+      time_enter_unixTimeStamp
+    );
 
     await pool.query("COMMIT;");
     res.status(201).send("check in berhasil").end();
   }
 );
 
+//endpoint untuk logout users
 app.post(
   "/checkOut",
   async (req, res, next) => {
@@ -280,9 +213,6 @@ async function authenticateUserIn(plat_number) {
       throw new Error("plat_number must be a string");
     }
 
-    //menandakan transaksi dimulai --> keterangan dicomment karena mau migrasi kode
-    // await pool.query("BEGIN;");
-
     const result = await pool.query(
       `SELECT * FROM parking_users WHERE plat_number = '${plat_number}'`
     );
@@ -290,17 +220,6 @@ async function authenticateUserIn(plat_number) {
     if (!result || !result.rows || !result.rows.length) {
       throw new Error("Unauthorized user");
     }
-
-    //insert data ke tabel orders_detail dengan time_enter = NOW()
-    // const insert_result = await pool.query(
-    //   `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${result.rows[0].user_id}', NOW(), 'NOT PAID') RETURNING *`
-    // );
-
-    //mau migrasi kode menjadi --> query insert ada langsung di endpoint check-in, dan pool query begin, commit, dan rollback di endpoint check-in juga
-    //jika tidak ada error, maka dapat dilakukan commit
-    // await pool.query("COMMIT;");
-    //
-    // return insert_result.rows[0];
 
     return result.rows[0];
   } catch (err) {

@@ -1,6 +1,9 @@
 # Use the official Node.js 18 image as the base image
 FROM node:18
 
+# Set the environment variable
+ENV PORT 8080
+
 # Set the working directory to /app
 WORKDIR /app
 
@@ -12,9 +15,6 @@ RUN npm install
 
 # Copy the rest of the application files to the container
 COPY . .
-
-# Set the environment variable PORT to 8080
-ENV PORT_APP=8080
 
 # Expose port 8080
 EXPOSE 8080
