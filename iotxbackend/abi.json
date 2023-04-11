@@ -15,16 +15,11 @@
 				"internalType": "uint256",
 				"name": "_time_enter",
 				"type": "uint256"
-			},
-			{
-				"internalType": "enum SmartParking.Status",
-				"name": "_status",
-				"type": "uint8"
 			}
 		],
 		"name": "addOrder",
 		"outputs": [],
-		"stateMutability": "payable",
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -43,17 +38,35 @@
 				"internalType": "uint256",
 				"name": "_price",
 				"type": "uint256"
-			},
-			{
-				"internalType": "enum SmartParking.Status",
-				"name": "_status",
-				"type": "uint8"
 			}
 		],
 		"name": "insertExit",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_user_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_value",
+				"type": "uint256"
+			}
+		],
+		"name": "topUpBalance",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -74,6 +87,19 @@
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -83,6 +109,11 @@
 		],
 		"name": "ordersDetail",
 		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "user_id",
+				"type": "uint256"
+			},
 			{
 				"internalType": "uint256",
 				"name": "time_enter",
@@ -120,6 +151,11 @@
 			{
 				"internalType": "uint256",
 				"name": "user_id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "balance",
 				"type": "uint256"
 			},
 			{
