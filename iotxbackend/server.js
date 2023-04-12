@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
-const { addOrder, userRegister, insertExit } = require("./blockchainFunc");
+const { userRegister, topUpBalance, addOrder, insertExit } = require("./blockchainFunc");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
