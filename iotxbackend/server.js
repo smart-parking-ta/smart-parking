@@ -32,6 +32,7 @@ app.post(
     const data = req.body;
 
     try {
+      //hasil return dari fungsi authenticateUserIn
       const authenticatedUser = await authenticateUserIn(data.plat_number);
 
       //jika user tidak ditemukan
@@ -64,9 +65,6 @@ app.post(
         date_when_check_in.getTime() / 1000
       );
 
-      //buat debugging
-      console.log("TIME ENTER UNIX TIMESTAMP: ", time_enter_unixTimeStamp);
-
       // fungsi untuk mengirim data ke blockchain network
       await addOrder(
         req.insert_result_check_in.user_id,
@@ -91,9 +89,8 @@ app.post(
     const data = req.body;
 
     try {
+      //hasil return dari fungsi authenticateUserOut
       const authenticatedUser = await authenticateUserOut(data.plat_number);
-      //buat debugging
-      console.log("authenticatedUser ketika checkout ", authenticatedUser);
       if (typeof authenticatedUser !== "object") {
         throw new Error(authenticatedUser);
       }
@@ -130,9 +127,6 @@ app.post(
       let time_exit_unixTimeStamp = Math.floor(
         date_when_check_out.getTime() / 1000
       );
-
-      //buat debugging
-      console.log("TIME EXIT UNIX TIMESTAMP: ", time_exit_unixTimeStamp);
 
       //fungsi untuk mengirim data ke blockchain network
       await insertExit(
