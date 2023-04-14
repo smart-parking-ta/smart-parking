@@ -1,7 +1,12 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
-const { userRegister, topUpBalance, addOrder, insertExit } = require("./blockchainFunc");
+const {
+  userRegister,
+  topUpBalance,
+  addOrder,
+  insertExit,
+} = require("./blockchainFunc");
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -23,6 +28,114 @@ app.use(bodyParser.json());
 //   console.log("user registered");
 //   next();
 // });
+
+//endpoint untuk topup balance di database dan blockchain
+app.post(
+  "/topUpBalance",
+  async (req, res, next) => {
+    try {
+      const data = req.body;
+
+      //validasi data yang diterima
+      if (!data.user_id || !data.amount) {
+        throw new Error("user_id and amount is required");
+      }
+      if (data.amount <= 0) {
+        throw new Error("amount must be greater than 0");
+      }
+
+      if (typeof data.user_id !== "number" || typeof data.amount !== "number") {
+        throw new Error("type of user_id and amount must be number");
+      }
+
+      //transaksi db dimulai
+      await pool.query("BEGIN;");
+
+      //insert balance ke database berdasarkan user_id
+      await pool.query(
+        `UPDATE parking_users SET balance = balance + ${data.amount} WHERE user_id = ${data.user_id}`
+      );
+
+      //simpan data yang diterima ke req.data_request_body
+      req.data_request_body = data;
+
+      //jika berhasil maka next ke middleware berikutnya
+      next();
+    } catch (err) {
+      //jika ada error maka masuk ke catch, return error dan transaksi db di rollback
+      await pool.query("ROLLBACK;");
+      res.status(406).send(err.message).end();
+    }
+  },
+  async (req, res) => {
+    try {
+      //fungsi untuk topup balance ke blockchain
+      await topUpBalance(
+        req.data_request_body.user_id,
+        req.data_request_body.amount
+      );
+
+      //jika berhasil maka commit transaksi db, jika gagal masuk ke catch
+      await pool.query("COMMIT;");
+
+      res.status(202).send("top up balance berhasil").end();
+    } catch (err) {
+      //jika ada error maka masuk ke catch, return error dan transaksi db di rollback
+      await pool.query("ROLLBACK;");
+
+      res.status(406).send(err.message).end();
+    }
+  }
+);
+
+//endpoint untuk register users (ini masih mentah banget, ga ada autentikasi 2 faktor dll)
+app.post(
+  "/register",
+  async (req, res, next) => {
+    try {
+      const data = req.body;
+
+      //validasi data yang diterima
+      if (!data.user_id || !data.plat_number) {
+        throw new Error("user_id and plat_number is required");
+      }
+      if (
+        typeof data.user_id !== "number" ||
+        typeof data.plat_number !== "string"
+      ) {
+        throw new Error("type of user_id and amount must be number");
+      }
+
+      await pool.query("BEGIN;");
+
+      //fungsi untuk insert user ke database
+      await pool.query(
+        `INSERT INTO parking_users (user_id, plat_number, balance) VALUES ('${data.user_id}', '${data.plat_number}', 0)`
+      );
+      req.data_request_body = data;
+
+      next();
+    } catch (err) {
+      await pool.query("ROLLBACK;");
+      res.status(409).send(err.message).end();
+    }
+  },
+  async (req, res) => {
+    try {
+      //fungsi untuk register user ke blockchain
+      await userRegister(
+        req.data_request_body.user_id,
+        req.data_request_body.plat_number
+      );
+
+      await pool.query("COMMIT;");
+      res.status(201).send("register berhasil").end();
+    } catch (err) {
+      await pool.query("ROLLBACK;");
+      res.status(409).send(err.message).end();
+    }
+  }
+);
 
 //endpoint untuk login users
 app.post(
