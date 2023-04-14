@@ -49,9 +49,7 @@ const addOrder = async (user_id, order_id, time_enter) => {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods
-      .addOrder(user_id, order_id, time_enter)
-      .encodeABI(),
+    data: contract.methods.addOrder(user_id, order_id, time_enter).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
@@ -68,9 +66,7 @@ const insertExit = async (order_id, time_exit, price) => {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods
-      .insertExit(order_id, time_exit, price)
-      .encodeABI(),
+    data: contract.methods.insertExit(order_id, time_exit, price).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
