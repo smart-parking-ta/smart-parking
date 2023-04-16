@@ -116,14 +116,9 @@ def time_exit(image, bbox):
     
     time_out = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cv2.putText(image, time_out, (x+50,y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
-    # Create a dictionary with the time_in value
     
-    time_dict = {"time_exit": time_out}
     
-    # Convert the dictionary to a JSON string
-    time_exit = json.dumps(time_dict)
-    
-    return time_exit
+    return time_out
 
 
 
@@ -171,7 +166,7 @@ def get_plate_number(image):
 
 
 
-def save_plate_in(get_plate, time_in):
+def save_plate_in_csv(get_plate, time_in):
 
     if get_plate == None:
         pass
@@ -180,8 +175,8 @@ def save_plate_in(get_plate, time_in):
         with open('vehicle_in.csv', 'r') as f:
             reader = csv.reader(f)
             for row in reader:
-                if row[0] == get_plate or row[1] == time_in:
-                    # print("same plate", row[0], "at ", row[1])
+                if len(row) >= 2 and (row[0] == get_plate or row[1] == time_in):
+                    print("You've already check in with ", row[0], "at ", row[1])
                     return
                 
         plate_dict = {"plate_number": get_plate, 
@@ -192,11 +187,14 @@ def save_plate_in(get_plate, time_in):
             w = csv.DictWriter(f, plate_dict.keys())
             w.writerow(plate_dict)
             print("saved plate", get_plate, "at ", time_in)
+            time.sleep(2)
 
     # return plate_dict
 
+#---------------------------------------------
 
-
+import tempfile
+import shutil
 
 def match_plate_out(get_plate, time_out):
     if get_plate == None:
@@ -206,7 +204,7 @@ def match_plate_out(get_plate, time_out):
             reader_in = csv.reader(f_in)
             for row in reader_in:
                 # print(get_plate.group(), row[0])
-                if row[0] == get_plate:
+                if row and row[0] == get_plate:
 
                     with open('vehicle_out.csv', 'r') as f_out_r:
                         reader_out_r = csv.reader(f_out_r)
@@ -238,11 +236,18 @@ def match_plate_out(get_plate, time_out):
                             print("saved plate ", get_plate, "at ", time_out)
                             return
                         
-                # with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
-                #     reader_out_r_r = csv.reader(f_out_r_r)
-                #     last_row = list(reader_out_r_r)[-1]
-                #     print("last data:", last_row)
-                #     return       
+                temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+                temp_file_path = temp_file.name
+                with open('vehicle_in.csv', 'r') as f_in:
+                    reader_in = csv.reader(f_in)
+                    writer = csv.writer(temp_file)
+                    for row in reader_in:
+                        if row and row[0] != get_plate:
+                            writer.writerow(row)
+                temp_file.close()
+
+                # Replace original file with temporary file
+                shutil.move(temp_file_path, 'vehicle_in.csv')
                         
         print('no match ', get_plate, "at ", time_out)
                     
@@ -252,116 +257,83 @@ def match_plate_out(get_plate, time_out):
 def get_last_plate_in():
     with open('vehicle_in.csv', 'r', newline='') as f_in_r_r:
         reader_in_r_r = csv.reader(f_in_r_r)
-        last_row = list(reader_in_r_r)[-1]
-        print("last data in: ", last_row)
+        rows = list(reader_in_r_r)[-1] 
+        if not rows:
+            pass
+        last_row = rows[0]
+        # print("last data in: ", last_row[0])
         return last_row
 
 
 
-def get_last_two_plates_in():
-    with open('vehicle_in.csv', 'r', newline='') as f_in_r_r:
-        reader_in_r_r = csv.reader(f_in_r_r)
-        rows = list(reader_in_r_r)
-        last_row = rows[-1]
-        second_last_row = rows[-2] if len(rows) >= 2 else None
-        # print("last data in: ", last_row)
-        # print("second last data in: ", second_last_row)
-        return last_row, second_last_row
-
-
 
 import requests
-def push_data_in_api(last_plate_in, get_plate):
-    # implement code to push data to API
+def push_data_in_api(last_plate, get_plate):
     # print("Pushing data to API:", get_plate)
     api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkIn"
 
-    # Request headers (optional)
     headers = {
         "Content-Type": "application/json"
     }
 
-    # Create the request body using the last data
     payload = {
         "plat_number": get_plate,
     }
 
-    print("last plate in: ", last_plate_in[0])
-    print("current plate in: ", get_plate)
+    print("last plate in: ", get_plate)
+    # print("current plate in: ", get_plate)
 
-    if get_plate == last_plate_in[0]:
-        print("same plate has been pushed to API")
-        return
-    elif get_plate == None:
-        print("no plate detected")
+
+    if last_plate == get_plate:
+        print("same plate")
         return
     else:
-        # Send a POST request to the API
-        response = requests.post(api_url, headers=headers, json=payload)
-        print("Pushing data to API:", get_plate)
-        # Check the response status code
-        if response.status_code == 200:
-            print("Data successfully pushed to API:", get_plate)
-        else:
-            print(response.text)
-        # time.sleep(2)
+        response = requests.post(api_url, json=payload, headers=headers)
+        print(response.status_code)
+        print(response.text)
+        time.sleep(2)
+        return response.status_code, response.text    
+        
 
     
-
-    # # Send a POST request to the API
-    # response = requests.post(api_url, headers=headers, json=payload)
-
-    # # Check the response status code
-    # if response.status_code == 200:
-    #     print("Data successfully pushed to API:", get_plate)
-    # else:
-    #     print(response.text)
 
 
         
-# def get_last_plate_out():
-#     with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
-#         reader_out_r_r = csv.reader(f_out_r_r)
-#         last_row = list(reader_out_r_r)[-1]
-#         print("last data out: ", last_row)
-#         return last_row
+def get_last_plate_out():
+    with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
+        reader_out_r_r = csv.reader(f_out_r_r)
+        rows = list(reader_out_r_r)[-1]
+        if not rows:
+            pass
+        last_row = rows[0]
+        # print("last data out: ", last_row)
+        return last_row
+    
     
 
-# def get_last_two_plates_out():
-#     with open('vehicle_out.csv', 'r', newline='') as f_out_r_r:
-#         reader_out_r_r = csv.reader(f_out_r_r)
-#         rows = list(reader_out_r_r)
-#         last_row = rows[-1]
-#         second_last_row = rows[-2] if len(rows) >= 2 else None
-#         print("last data out: ", last_row)
-#         print("second last data out: ", second_last_row)
-#         return last_row, second_last_row
-    
+def push_data_out_api(last_plate_out, get_plate):
 
-# def push_data_out_api(data):
-#     # implement code to push data to API
-#     print("Pushing data to API:", data[0])
-#     api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkOut"
+    # print("Pushing data to API:", get_plate)
+    api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkOut"
 
-#     # Request headers (optional)
-#     headers = {
-#         "Content-Type": "application/json"
-#     }
+    headers = {
+        "Content-Type": "application/json"
+    }
 
-#     # Create the request body using the last data
-#     payload = {
-#         "plat_number": data[0],
-#     }
+    payload = {
+        "plat_number": get_plate,
+    }
 
-#     # Send a POST request to the API
-#     response = requests.post(api_url, headers=headers, json=payload)
 
-#     # Check the response status code
-#     if response.status_code == 200:
-#         print("Data successfully pushed to API:", data)
-#     else:
-#         print("Error pushing data to API:", response.text)
-
+    if last_plate_out == get_plate:
+        print("same plate")
+        return
+    else:
+        response = requests.post(api_url, json=payload, headers=headers)
+        print(response.status_code)
+        print(response.text)
+        time.sleep(2)
+        return response.status_code, response.text
 
 
 
@@ -373,39 +345,39 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         ss_object = screenshot_object(image, index, boxes_np[i], confidences_np)
         time_in = time_enter(image, boxes_np[i])
         get_plate = get_plate_number(ss_object)
-
-        save_plate_number = save_plate_in(get_plate, time_in)
-        # check_plate = match_plate_out(get_plate, time_in)
-
+        
 
         x1,y1,w,h = box.astype('int')
         cv2.rectangle(image,(x1,y1),(x1+w,y1+h),(255,0,0),2)
         cv2.putText(image, f'{confidences_np[i]:.2f}', (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
         # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
 
-        last_plate_in = get_last_plate_in()
-        # last_plate_out = get_last_plate_out()
-
-
-        # PUSH DATA VEHICLE IN TO API
-        last_row_in, second_last_row_in = get_last_two_plates_in()
-        # print("last row in: ", last_row_in)
-
-
-        # if last_plate_in[0] != get_plate:
-        #     push_data_in_api(last_plate_in, get_plate)
-        #     time.sleep(3)
-        # else:
-        #     print("No new data to push to API")
-
-
-        # PUSH DATA VEHICLE OUT TO API
-        # last_row_out, second_last_row_out = get_last_two_plates_out()
-        # if last_row_out != second_last_row_out:
-        #     push_data_out_api(last_row_out)
-        # else:
-        #     print("No new data to push to API")
         
+
+        # ----------------------------------------PLATE IN-------------------------------------------------------
+
+        # last_plate = get_last_plate_in()
+        # save_plate_in = save_plate_in_csv(get_plate, time_in)
+
+        # # PUSH DATA TO API FOR PLATE IN
+        # if get_plate is not None: # check if detected plate number is different from the last plate number
+        #     push_data_in_api(last_plate, get_plate) # push data to API
+        #     last_plate = get_plate # update the last plate number with the newly detected one
+
+
+        # -----------------------------------------PLATE OUT-----------------------------------------------------
+
+        time_out = time_exit(image, boxes_np[i])
+        save_plate_out = match_plate_out(get_plate, time_out)
+
+        last_plate_out = get_last_plate_out()
+        # PUSH DATA TO API FOR PLATE OUT
+        if get_plate is not None:
+            push_data_out_api(last_plate_out, get_plate)
+            last_plate_out = get_plate
+        
+        # ------------------------------------------------------------------------------------------------------
+
     return image
 
 
@@ -436,7 +408,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 
 
 
