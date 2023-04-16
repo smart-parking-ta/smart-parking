@@ -312,8 +312,9 @@ def get_last_plate_out():
     
 
 def push_data_out_api(last_plate_out, get_plate):
+    print("last plate out: ", last_plate_out)
+    print("Pushing data to API:", get_plate)
 
-    # print("Pushing data to API:", get_plate)
     api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkOut"
 
     headers = {
@@ -324,6 +325,10 @@ def push_data_out_api(last_plate_out, get_plate):
         "plat_number": get_plate,
     }
 
+    # response = requests.post(api_url, json=payload, headers=headers)
+    # print(response.status_code)
+    # print(response.text)
+    # time.sleep(2)
 
     if last_plate_out == get_plate:
         print("same plate")
@@ -368,13 +373,13 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
         time_out = time_exit(image, boxes_np[i])
-        save_plate_out = match_plate_out(get_plate, time_out)
 
         last_plate_out = get_last_plate_out()
         # PUSH DATA TO API FOR PLATE OUT
         if get_plate is not None:
             push_data_out_api(last_plate_out, get_plate)
             last_plate_out = get_plate
+            save_plate_out = match_plate_out(get_plate, time_out)
         
         # ------------------------------------------------------------------------------------------------------
 
