@@ -21,7 +21,7 @@ contract SmartParking {
   struct Order {
     uint256 user_id;
     uint256 balance;
-    string plat_number;
+    string plate_number;
     uint256[] order_id;
     }
 
@@ -34,14 +34,14 @@ contract SmartParking {
   }
 
   function userOrderInfo(uint256 _user_id) public view returns (
-    uint256 user_id, uint256 balance, string memory plat_number, uint256[] memory order_id){
-      return (orders[_user_id].user_id, orders[_user_id].balance, orders[_user_id].plat_number, orders[_user_id].order_id);
+    uint256 user_id, uint256 balance, string memory plate_number, uint256[] memory order_id){
+      return (orders[_user_id].user_id, orders[_user_id].balance, orders[_user_id].plate_number, orders[_user_id].order_id);
   }
 
-  function userRegister(uint256 _user_id, string memory _plat_number) public onlyAdmin {
+  function userRegister(uint256 _user_id, string memory _plate_number) public onlyAdmin {
     Order storage order = orders[_user_id];
     order.user_id = _user_id;
-    order.plat_number = _plat_number;
+    order.plate_number = _plate_number;
   }
 
   function topUpBalance(uint256 _user_id, uint256 _value) public onlyAdmin {
