@@ -1,6 +1,6 @@
 const abi = require("./abi.json");
 const Web3 = require("web3");
-const web3 = new Web3(window.ethereum);
+const web3 = new Web3("https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD");
 require("dotenv").config();
 
 const contractAddress = "0x01E42785E82bf8E037B0a3DB01EC0d47281fdCce";
@@ -49,9 +49,7 @@ const addOrder = async (user_id, order_id, time_enter) => {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods
-      .addOrder(user_id, order_id, time_enter)
-      .encodeABI(),
+    data: contract.methods.addOrder(user_id, order_id, time_enter).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
@@ -68,9 +66,7 @@ const insertExit = async (order_id, time_exit, price) => {
     from: accountAddress,
     to: contractAddress,
     gas: 150000,
-    data: contract.methods
-      .insertExit(order_id, time_exit, price)
-      .encodeABI(),
+    data: contract.methods.insertExit(order_id, time_exit, price).encodeABI(),
   };
 
   const signature = await web3.eth.accounts.signTransaction(tx, privateKey);

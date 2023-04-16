@@ -12,7 +12,7 @@ require("dotenv").config();
 //   port: process.env.PORT_DB, // default PostgreSQL port
 // });
 
-//for development
+// for development
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.HOST,
