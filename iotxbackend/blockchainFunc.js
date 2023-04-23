@@ -78,4 +78,33 @@ const insertExit = async (order_id, time_exit, price) => {
     });
 };
 
-module.exports = { userRegister, topUpBalance, addOrder, insertExit };
+const getUserOrderInfo = async (user_id) => {
+  const data = await contract.methods.userOrderInfo(user_id).call();
+  const newData = {
+    user_id: data.user_id,
+    balance: data.balance,
+    plate_number: data.plate_number,
+    order_list: data.order_id,
+  }
+  console.log(newData)
+  return newData;
+}
+
+const getOrderDetail = async (order_id) => {
+  const data = await contract.methods.ordersDetail(order_id).call();
+  const newData = {
+    user_id: data.user_id,
+    time_enter: data.time_enter,
+    time_exit: data.time_exit,
+    price: data.price,
+    status: data.status
+  }
+  console.log(newData)
+  return newData;
+}
+
+// Uncomment this for test read data from contract
+// getUserOrderInfo(1)
+// getOrderDetail(1)
+
+module.exports = { userRegister, topUpBalance, addOrder, insertExit, getUserOrderInfo, getOrderDetail };
