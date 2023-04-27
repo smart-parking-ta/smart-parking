@@ -81,10 +81,10 @@ const insertExit = async (order_id, time_exit, price) => {
 const getUserOrderInfo = async (user_id) => {
   const data = await contract.methods.userOrderInfo(user_id).call();
   const newData = {
-    user_id: data.user_id,
-    balance: data.balance,
+    user_id: parseInt(data.user_id),
+    balance: parseInt(data.balance),
     plate_number: data.plate_number,
-    order_list: data.order_id,
+    order_list: data.order_id.map(function(str){return parseInt(str)}),
   }
   console.log(newData)
   return newData;
@@ -93,11 +93,11 @@ const getUserOrderInfo = async (user_id) => {
 const getOrderDetail = async (order_id) => {
   const data = await contract.methods.ordersDetail(order_id).call();
   const newData = {
-    user_id: data.user_id,
-    time_enter: data.time_enter,
-    time_exit: data.time_exit,
-    price: data.price,
-    status: data.status
+    user_id: parseInt(data.user_id),
+    time_enter: parseInt(data.time_enter),
+    time_exit: parseInt(data.time_exit),
+    price: parseInt(data.price),
+    status: parseInt(data.status)
   }
   console.log(newData)
   return newData;
