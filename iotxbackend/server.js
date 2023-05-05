@@ -96,23 +96,20 @@ app.post(
       const data = req.body;
 
       //validasi data yang diterima
-      if (!data.user_id || !data.plat_number) {
-        throw new Error("user_id and plat_number is required");
+      if (!data.plat_number) {
+        throw new Error("plate_number is required");
       }
-      if (
-        typeof data.user_id !== "number" ||
-        typeof data.plat_number !== "string"
-      ) {
-        throw new Error("type of user_id and amount must be number");
+      if (typeof data.plat_number !== "string") {
+        throw new Error("type of plate_number must be string");
       }
 
       await pool.query("BEGIN;");
 
       //fungsi untuk insert user ke database
-      await pool.query(
-        `INSERT INTO parking_users (user_id, plat_number, balance) VALUES ('${data.user_id}', '${data.plat_number}', 0)`
+      const insert_result = await pool.query(
+        `INSERT INTO parking_users (plat_number) VALUES ('${data.plat_number}') RETURNING *`
       );
-      req.data_request_body = data;
+      req.insert_result_register = insert_result.rows[0];
 
       next();
     } catch (err) {
@@ -124,8 +121,8 @@ app.post(
     try {
       //fungsi untuk register user ke blockchain
       await userRegister(
-        req.data_request_body.user_id,
-        req.data_request_body.plat_number
+        req.insert_result_register.user_id,
+        req.insert_result_register.plat_number
       );
 
       await pool.query("COMMIT;");
