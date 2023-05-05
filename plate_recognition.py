@@ -269,7 +269,7 @@ def get_last_plate_in():
 
 import requests
 def push_data_in_api(last_plate, get_plate):
-    # print("Pushing data to API:", get_plate)
+    print("Pushing data to API:", get_plate)
     api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkIn"
 
     headers = {
@@ -325,10 +325,10 @@ def push_data_out_api(last_plate_out, get_plate):
         "plat_number": get_plate,
     }
 
-    # response = requests.post(api_url, json=payload, headers=headers)
-    # print(response.status_code)
-    # print(response.text)
-    # time.sleep(2)
+    response = requests.post(api_url, json=payload, headers=headers)
+    print(response.status_code)
+    print(response.text)
+    time.sleep(2)
 
     if last_plate_out == get_plate:
         print("same plate")
@@ -361,25 +361,25 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
-        # last_plate = get_last_plate_in()
-        # save_plate_in = save_plate_in_csv(get_plate, time_in)
+        last_plate = get_last_plate_in()
+        save_plate_in = save_plate_in_csv(get_plate, time_in)
 
-        # # PUSH DATA TO API FOR PLATE IN
-        # if get_plate is not None: # check if detected plate number is different from the last plate number
-        #     push_data_in_api(last_plate, get_plate) # push data to API
-        #     last_plate = get_plate # update the last plate number with the newly detected one
+        # PUSH DATA TO API FOR PLATE IN
+        if get_plate is not None: # check if detected plate number is different from the last plate number
+            push_data_in_api(last_plate, get_plate) # push data to API
+            last_plate = get_plate # update the last plate number with the newly detected one
 
 
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
-        time_out = time_exit(image, boxes_np[i])
+        # time_out = time_exit(image, boxes_np[i])
 
-        last_plate_out = get_last_plate_out()
-        # PUSH DATA TO API FOR PLATE OUT
-        if get_plate is not None:
-            push_data_out_api(last_plate_out, get_plate)
-            last_plate_out = get_plate
-            save_plate_out = match_plate_out(get_plate, time_out)
+        # last_plate_out = get_last_plate_out()
+        # # PUSH DATA TO API FOR PLATE OUT
+        # if get_plate is not None:
+        #     push_data_out_api(last_plate_out, get_plate)
+        #     last_plate_out = get_plate
+        #     save_plate_out = match_plate_out(get_plate, time_out)
         
         # ------------------------------------------------------------------------------------------------------
 
