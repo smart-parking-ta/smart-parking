@@ -87,11 +87,9 @@ def screenshot_object(image, index, bbox, confidences_np):
     for i in index:
         if confidences_np[i] > confidence_detect_target:
             if not plate_saved.get(i, False):
-                # Generate a unique filename based on the image counter
                 filename = f'plate_{image_counter}.jpg'
                 image_counter += 1
 
-                # Save the image and set the flag in plate_saved
                 cv2.imwrite(filename, crop_img)
                 plate_saved[i] = True
                 # print(plate_saved)
@@ -133,7 +131,6 @@ def yolo_predictions(image, net):
     detections = get_predictions_yolo(input_image, net)
     boxes_np, confidences_np, index = drawings_box(input_image, detections)
     
-    # result_image = draw_boxes(image, *drawings_box(input_image, detections))
     result_image = draw_boxes(image, boxes_np, confidences_np,index)
 
     return result_image
@@ -161,13 +158,10 @@ def get_plate_number(image):
         return None
     
 
-    # if ocr_plate_number:
-    # return ocr_plate_number.group()
 
 
 
-def save_plate_in_csv(get_plate, time_in):
-
+def save_plate_in_csv(last_plate, get_plate, time_in):
     if get_plate == None:
         pass
     else:
@@ -180,18 +174,92 @@ def save_plate_in_csv(get_plate, time_in):
                     return
                 
         plate_dict = {"plate_number": get_plate, 
-                    "time_in": time_in}
+                    "time_in": time_in,
+                    "status": 0}
         print(plate_dict)
         
         with open('vehicle_in.csv', 'a', newline='') as f:
             w = csv.DictWriter(f, plate_dict.keys())
             w.writerow(plate_dict)
-            print("saved plate", get_plate, "at ", time_in)
-            time.sleep(2)
+            # print("saved plate", get_plate, "at ", time_in)
+            # time.sleep(2)
+
+
+        status_code, response_text = push_data_in_api(last_plate, get_plate)
+
+        # Update status in CSV file
+        with open('vehicle_in.csv', 'r') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        for row in rows:
+            if row['plate_number'] == get_plate:
+                row['status'] = 1 if status_code == 201 else 0
+
+        with open('vehicle_in.csv', 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
+            writer.writeheader()
+            writer.writerows(rows)
+
+        print("saved plate", get_plate, "at ", time_in)
+        time.sleep(2)
 
     # return plate_dict
 
+
+
+
+
+
+def get_last_plate_in():
+    with open('vehicle_in.csv', 'r', newline='') as f_in_r_r:
+        reader_in_r_r = csv.reader(f_in_r_r)
+        rows = list(reader_in_r_r)[-1] 
+        if not rows:
+            pass
+        last_row = rows[0]
+        # print("last data in: ", last_row[0])
+        return last_row
+
+
+
+
+import requests
+def push_data_in_api(last_plate, get_plate):
+    print("Pushing data to API:", get_plate)
+    api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkIn"
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "plat_number": get_plate,
+    }
+
+    print("last plate in: ", get_plate)
+    # print("current plate in: ", get_plate)
+
+
+    if last_plate == get_plate:
+        print("same plate")
+        return
+    else:
+        response = requests.post(api_url, json=payload, headers=headers)
+        print(response.status_code)
+        print(response.text)
+        time.sleep(2)
+        return response.status_code, response.text    
+        
+
+
+
+
+
 #---------------------------------------------
+
+
+
 
 import tempfile
 import shutil
@@ -252,49 +320,6 @@ def match_plate_out(get_plate, time_out):
         print('no match ', get_plate, "at ", time_out)
                     
 
-
-
-def get_last_plate_in():
-    with open('vehicle_in.csv', 'r', newline='') as f_in_r_r:
-        reader_in_r_r = csv.reader(f_in_r_r)
-        rows = list(reader_in_r_r)[-1] 
-        if not rows:
-            pass
-        last_row = rows[0]
-        # print("last data in: ", last_row[0])
-        return last_row
-
-
-
-
-import requests
-def push_data_in_api(last_plate, get_plate):
-    # print("Pushing data to API:", get_plate)
-    api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkIn"
-
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "plat_number": get_plate,
-    }
-
-    print("last plate in: ", get_plate)
-    # print("current plate in: ", get_plate)
-
-
-    if last_plate == get_plate:
-        print("same plate")
-        return
-    else:
-        response = requests.post(api_url, json=payload, headers=headers)
-        print(response.status_code)
-        print(response.text)
-        time.sleep(2)
-        return response.status_code, response.text    
-        
-
     
 
 
@@ -311,11 +336,13 @@ def get_last_plate_out():
     
     
 
+    
+
 def push_data_out_api(last_plate_out, get_plate):
     print("last plate out: ", last_plate_out)
     print("Pushing data to API:", get_plate)
 
-    api_url = "https://final-project-iotxbackend-zv3ntfgfrq-et.a.run.app/checkOut"
+    api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkOut"
 
     headers = {
         "Content-Type": "application/json"
@@ -325,10 +352,10 @@ def push_data_out_api(last_plate_out, get_plate):
         "plat_number": get_plate,
     }
 
-    # response = requests.post(api_url, json=payload, headers=headers)
-    # print(response.status_code)
-    # print(response.text)
-    # time.sleep(2)
+    response = requests.post(api_url, json=payload, headers=headers)
+    print(response.status_code)
+    print(response.text)
+    time.sleep(2)
 
     if last_plate_out == get_plate:
         print("same plate")
@@ -361,25 +388,26 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
-        # last_plate = get_last_plate_in()
-        # save_plate_in = save_plate_in_csv(get_plate, time_in)
+        last_plate = get_last_plate_in()
+        # save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
 
-        # # PUSH DATA TO API FOR PLATE IN
-        # if get_plate is not None: # check if detected plate number is different from the last plate number
-        #     push_data_in_api(last_plate, get_plate) # push data to API
-        #     last_plate = get_plate # update the last plate number with the newly detected one
+        # PUSH DATA TO API FOR PLATE IN
+        if get_plate is not None: # check if detected plate number is different from the last plate number
+            # push_data_in_api(last_plate, get_plate) # push data to API
+            save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
+            last_plate = get_plate # update the last plate number with the newly detected one
 
 
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
-        time_out = time_exit(image, boxes_np[i])
+        # time_out = time_exit(image, boxes_np[i])
 
-        last_plate_out = get_last_plate_out()
-        # PUSH DATA TO API FOR PLATE OUT
-        if get_plate is not None:
-            push_data_out_api(last_plate_out, get_plate)
-            last_plate_out = get_plate
-            save_plate_out = match_plate_out(get_plate, time_out)
+        # last_plate_out = get_last_plate_out()
+        # # PUSH DATA TO API FOR PLATE OUT
+        # if get_plate is not None:
+        #     push_data_out_api(last_plate_out, get_plate)
+        #     last_plate_out = get_plate
+        #     save_plate_out = match_plate_out(get_plate, time_out)
         
         # ------------------------------------------------------------------------------------------------------
 
