@@ -181,7 +181,6 @@ app.post(
         req.insert_result_check_in.booking_id,
         time_enter_unixTimeStamp
       );
-
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
     } catch (err) {
