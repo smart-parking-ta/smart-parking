@@ -175,7 +175,8 @@ def save_plate_in_csv(last_plate, get_plate, time_in):
                 
         plate_dict = {"plate_number": get_plate, 
                     "time_in": time_in,
-                    "status": 0}
+                    "status": 0,
+                    "response_text": None,}
         print(plate_dict)
         
         with open('vehicle_in.csv', 'a', newline='') as f:
@@ -195,6 +196,8 @@ def save_plate_in_csv(last_plate, get_plate, time_in):
         for row in rows:
             if row['plate_number'] == get_plate:
                 row['status'] = 1 if status_code == 201 else 0
+                row['response_text'] = "unauth" if status_code == 401 else 0
+                row['response_text'] = "error" if status_code == 404 else 0
 
         with open('vehicle_in.csv', 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
@@ -252,6 +255,29 @@ def push_data_in_api(last_plate, get_plate):
         return response.status_code, response.text    
         
 
+
+def push_pending_plates(last_plate):
+    while True:
+        with open('vehicle_in.csv', 'r') as f:
+            reader = csv.DictReader(f)
+            rows = list(reader)
+
+        for plate in rows:
+            if plate['status'] == '0':
+                status_code, response_text = push_data_in_api(last_plate, plate['plate_number'])
+                if status_code == 201:
+                    plate['status'] = '1'
+            elif plate['status'] == '1' and 'error' in response_text.lower():
+                status_code, response_text = push_data_in_api(last_plate, plate['plate_number'])
+                if status_code == 201:
+                    plate['status'] = '1'
+
+        with open('vehicle_in.csv', 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['plate_number', 'time_in', 'status', 'response_text'])
+            writer.writeheader()
+            writer.writerows(rows)
+
+        time.sleep(10)
 
 
 
@@ -389,7 +415,6 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
         last_plate = get_last_plate_in()
-        # save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
 
         # PUSH DATA TO API FOR PLATE IN
         if get_plate is not None: # check if detected plate number is different from the last plate number
