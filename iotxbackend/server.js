@@ -7,9 +7,14 @@ const {
   addOrder,
   insertExit,
 } = require("./blockchainFunc");
+const { connectMqtt } = require("./connectMqtt");
+
 const app = express();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+app.use(connectMqtt);
 
 //endpoint buat tes bisa terhubung ke database atau tidak
 // app.get("/", async (req, res) => {
@@ -20,13 +25,6 @@ app.use(bodyParser.json());
 //endpoint buat print res.json aja
 // app.get("/", (req, res) => {
 //   res.json("HOORAY");
-// });
-
-//Nanti fungsi ini digabung sama api backend endpoint register
-// app.use(async function (req, res, next) {
-//   await userRegister(1, "DK1234AB");
-//   console.log("user registered");
-//   next();
 // });
 
 //endpoint untuk topup balance di database dan blockchain
@@ -182,6 +180,18 @@ app.post(
         time_enter_unixTimeStamp
       );
 
+      const mqttClient = req.mqtt;
+      mqttClient.publish(
+        "backend/checkIn",
+        "OPEN",
+        { qos: 1, retain: true },
+        (error) => {
+          if (error) {
+            console.log(error);
+          }
+        }
+      );
+
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
     } catch (err) {
@@ -243,6 +253,18 @@ app.post(
         req.booking_data_to_alter.booking_id,
         time_exit_unixTimeStamp,
         req.booking_data_to_alter.price
+      );
+
+      const mqttClient = req.mqtt;
+      mqttClient.publish(
+        "backend/checkOut",
+        "OPEN",
+        { qos: 1, retain: true },
+        (error) => {
+          if (error) {
+            console.log(error);
+          }
+        }
       );
 
       await pool.query("COMMIT;");

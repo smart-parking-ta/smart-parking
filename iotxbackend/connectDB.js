@@ -6,10 +6,10 @@ require("dotenv").config();
 //use this untuk dideploy ke cloud run
 // const pool = new Pool({
 //   user: process.env.DB_USER,
-//   host: process.env.INSTANCE_UNIX_SOCKET,
-//   database: process.env.DB_NAME,
 //   password: process.env.DB_PASS,
-//   port: process.env.PORT_DB, // default PostgreSQL port
+//   database: process.env.DB_NAME,
+//   host: process.env.INSTANCE_UNIX_SOCKET,
+//   // port: process.env.PORT_DB, // default PostgreSQL port
 // });
 
 // for development
