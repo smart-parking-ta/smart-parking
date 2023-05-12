@@ -2,12 +2,12 @@ const mqtt = require("mqtt");
 require("dotenv").config();
 
 const connectMqtt = (req, res, next) => {
-  const host = localhost;
+  const host = "192.168.43.213";
   const port = 1883;
   const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 
+  //   const connectUrl = `mqtt://${host}:${port}`;
   const connectUrl = `mqtt://${host}:${port}`;
-
   //unisiasi client mqtt dan jika memang error connect akan dilakukan reconnect
   //dengan periode 5 detik
   const client = mqtt.connect(connectUrl, {
@@ -22,6 +22,7 @@ const connectMqtt = (req, res, next) => {
   //ketika state sudah connect, maka akan log ke console bahwa sudah connect
   client.on("connect", () => {
     console.log(`Connected to ${connectUrl}`);
+    client.publish("backend/heyhey", "Hello from backend");
   });
 
   client.on("error", (error) => {
