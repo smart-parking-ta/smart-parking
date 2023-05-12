@@ -185,7 +185,7 @@ app.post(
       mqttClient.publish(
         "backend/checkIn",
         "OPEN",
-        { qos: 1, retain: true },
+        { qos: 2, retain: false },
         (error) => {
           if (error) {
             console.log(error);
@@ -261,7 +261,7 @@ app.post(
       mqttClient.publish(
         "backend/checkOut",
         "OPEN",
-        { qos: 1, retain: true },
+        { qos: 2, retain: false },
         (error) => {
           if (error) {
             console.log(error);
