@@ -10,10 +10,10 @@ extern "C"
 }
 #include <AsyncMqttClient.h>
 
-#define WIFI_SSID "rel"
-#define WIFI_PASSWORD "gerigiroda"
+#define WIFI_SSID "FOUR CS #FeelsLikeHome 2.4G"
+#define WIFI_PASSWORD "lupalagi"
 
-#define MQTT_HOST IPAddress(192, 168, 43, 213)
+#define MQTT_HOST IPAddress(192,168,18,159)
 #define MQTT_PORT 1883
 
 AsyncMqttClient mqttClient;
@@ -56,9 +56,13 @@ void onMqttConnect(bool sessionPresent)
     Serial.println("Connected to MQTT.");
     Serial.print("Session present: ");
     Serial.println(sessionPresent);
-    uint16_t packetIdSub = mqttClient.subscribe("test/lol", 2);
+    uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkIn", 2);
     Serial.print("Subscribing at QoS 2, packetId: ");
-    Serial.println(packetIdSub);
+    Serial.println(packetIdSub1);
+
+    uint16_t packetIdSub2 = mqttClient.subscribe("backend/checkOut", 2);
+    Serial.print("Subscribing at QoS 2, packetId: ");
+    Serial.println(packetIdSub2);
     // mqttClient.publish("test/lol", 0, true, "test 1");
     // Serial.println("Publishing at QoS 0");
     // uint16_t packetIdPub1 = mqttClient.publish("test/lol", 1, true, "test 2");
