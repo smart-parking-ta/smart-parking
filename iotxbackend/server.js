@@ -180,11 +180,12 @@ app.post(
         time_enter_unixTimeStamp
       );
 
+      // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
       const mqttClient = req.mqtt;
       mqttClient.publish(
         "backend/checkIn",
         "OPEN",
-        { qos: 1, retain: true },
+        { qos: 2, retain: false },
         (error) => {
           if (error) {
             console.log(error);
@@ -255,11 +256,12 @@ app.post(
         req.booking_data_to_alter.price
       );
 
+      //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
       const mqttClient = req.mqtt;
       mqttClient.publish(
         "backend/checkOut",
         "OPEN",
-        { qos: 1, retain: true },
+        { qos: 2, retain: false },
         (error) => {
           if (error) {
             console.log(error);
