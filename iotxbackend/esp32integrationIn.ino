@@ -75,8 +75,8 @@ void onMqttConnect(bool sessionPresent)
     Serial.println("Connected to MQTT.");
     Serial.print("Session present: ");
     Serial.println(sessionPresent);
-    uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkIn", 2);
-    Serial.print("Subscribing at QoS 2, packetId: ");
+    uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkIn", 1);
+    Serial.print("Subscribing at QoS 1, packetId: ");
     Serial.println(packetIdSub1);
 
     // uint16_t packetIdSub2 = mqttClient.subscribe("backend/checkOut", 2);
@@ -246,11 +246,11 @@ void ultrasonicPublishClose(char phase[])
 
     if (strcmp(phase, "checkIn") == 0)
     {
-        mqttClient.publish("backend/checkIn", 2, false, "CLOSE");
+        mqttClient.publish("backend/checkIn", 1, false, "CLOSE");
     }
     else if (strcmp(phase, "checkOut") == 0)
     {
-        mqttClient.publish("backend/checkOut", 2, false, "CLOSE");
+        mqttClient.publish("backend/checkOut", 1, false, "CLOSE");
     }
 }
 
