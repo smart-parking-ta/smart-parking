@@ -233,6 +233,7 @@ app.post(
           `UPDATE orders_detail SET status = 'PAID' WHERE booking_id = '${authenticatedUser.booking_id}'`
         );
       }
+
       req.booking_data_to_alter = authenticatedUser;
       next();
     } catch (err) {
