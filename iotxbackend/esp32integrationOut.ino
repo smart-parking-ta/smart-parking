@@ -35,6 +35,10 @@ float distanceInch;
 bool checkInPass = false;
 bool checkOutPass = false;
 
+// current state for car pass or out status
+bool carPassBarrierIn = false;
+bool carPassBarrierOut = false;
+
 AsyncMqttClient mqttClient;
 TimerHandle_t mqttReconnectTimer;
 TimerHandle_t wifiReconnectTimer;
@@ -75,10 +79,13 @@ void onMqttConnect(bool sessionPresent)
     Serial.println("Connected to MQTT.");
     Serial.print("Session present: ");
     Serial.println(sessionPresent);
-
-    uint16_t packetIdSub2 = mqttClient.subscribe("backend/checkOut", 1);
+    uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkOut", 1);
     Serial.print("Subscribing at QoS 1, packetId: ");
-    Serial.println(packetIdSub2);
+    Serial.println(packetIdSub1);
+
+    // uint16_t packetIdSub2 = mqttClient.subscribe("backend/checkOut", 2);
+    // Serial.print("Subscribing at QoS 2, packetId: ");
+    // Serial.println(packetIdSub2);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -287,11 +294,19 @@ void loop()
     {
         ultrasonicListen();
 
-        // jika jarak ultrasonik <3 meter, maka publish message (closed ke topic backend/checkIn)
-        if (distanceCm >= 5 && distanceCm <= 10)
+        // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierIn ke true
+        if (distanceCm >= 3 && distanceCm <= 5)
+        {
+            carPassBarrierIn = true;
+        }
+
+        // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
+        // publish message (closed ke topic backend/checkIn) dan mengubah status carPassBarrierIn = false
+        if (distanceCm >= 10 && carPassBarrierIn == true)
         {
             ultrasonicPublishClose("checkIn");
             delay(2000);
+            carPassBarrierIn = false;
         }
 
         // Masalahnya kalau pake variabel checkInPass false di subscribe itu harus jalanin servo yang perlu beberapa detik
@@ -303,15 +318,19 @@ void loop()
     {
         ultrasonicListen();
 
-        // jika jarak ultrasonik <3 meter, maka publish message (closed ke topic backend/checkIn)
-        if (distanceCm >= 5 && distanceCm <= 10)
+        // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierOut ke true
+        if (distanceCm >= 3 && distanceCm <= 5)
+        {
+            carPassBarrierOut = true;
+        }
+
+        // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
+        // publish message (closed ke topic backend/checkOut) dan mengubah status carPassBarrierOut = false
+        if (distanceCm >= 10 && carPassBarrierOut == true)
         {
             ultrasonicPublishClose("checkOut");
             delay(2000);
+            carPassBarrierOut = false;
         }
     }
-
-    // saat aktif ultrasonik akan mendeteksi terus menerus
-
-    // ada dua sensor ultrasonic, gimana jalan bersamaan?
 }
