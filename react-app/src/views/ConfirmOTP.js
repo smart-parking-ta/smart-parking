@@ -15,7 +15,7 @@ function ConfirmOTP(){
     }
 
     return(
-        <div>
+      <div class="w-full max-w-sm">
             <form class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4" onSubmit={onConfirmSubmit}>
             <p className="text-black text-sm pb-6">Masukkan kode yang dikirimkan ke nomor telepon anda</p>
             <div class="mb-4">
