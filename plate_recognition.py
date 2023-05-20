@@ -7,6 +7,8 @@ import json
 import time
 from datetime import datetime, timedelta
 import csv
+import tempfile
+import shutil
 
 INPUT_WIDTH =  640
 INPUT_HEIGHT = 640
@@ -267,35 +269,30 @@ def push_data_in_api(last_plate, get_plate):
 
 
 
-def retry_push_in():
-    with open('vehicle_in.csv', 'r') as f:
-        reader = csv.DictReader(f)
-        rows = list(reader)
+# def retry_push_in():
+#     with open('vehicle_in.csv', 'r') as f:
+#         reader = csv.DictReader(f)
+#         rows = list(reader)
     
-    for plate in rows:
-        if plate['status'] == '1' and plate['response_text'] == 'error':
-            print("retrying push data to API:", plate['plate_number'])
-            # status_code, response_text = push_data_in_api(last_plate=None, get_plate=plate['plate_number'])
+#     for plate in rows:
+#         if plate['status'] == '1' and plate['response_text'] == 'error':
+#             print("retrying push data to API:", plate['plate_number'])
+#             # status_code, response_text = push_data_in_api(last_plate=None, get_plate=plate['plate_number'])
             
-            # Check the response from the API
-            # if status_code == 200:
-            #     
-            #     plate['status'] = '1'
-            #     print("Data pushed successfully!")
-            # else:
-            #     print("Failed to push data:", response_text)
+#             # Check the response from the API
+#             # if status_code == 200:
+#             #     
+#             #     plate['status'] = '1'
+#             #     print("Data pushed successfully!")
+#             # else:
+#             #     print("Failed to push data:", response_text)
             
-            # time.sleep(2)
+#             # time.sleep(2)
         
 
 
 #---------------------------------------------
 
-
-
-
-import tempfile
-import shutil
 
 
 
@@ -478,8 +475,6 @@ def push_data_out_api(get_plate):
     payload = {
         "plat_number": get_plate,
     }
-
-
     
     response = requests.post(api_url, json=payload, headers=headers)
     print(response.status_code)
@@ -509,25 +504,25 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
-        # last_plate = get_last_plate_in()
-        # # PUSH DATA TO API FOR PLATE IN
-        # if get_plate is not None: # check if detected plate number is different from the last plate number
-        #     # push_data_in_api(last_plate, get_plate) # push data to API
-        #     save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
-        #     last_plate = get_plate # update the last plate number with the newly detected one
+        last_plate = get_last_plate_in()
+        # PUSH DATA TO API FOR PLATE IN
+        if get_plate is not None: # check if detected plate number is different from the last plate number
+            # push_data_in_api(last_plate, get_plate) # push data to API
+            save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
+            last_plate = get_plate # update the last plate number with the newly detected one
 
-        #     # retry_push_in()
+            # retry_push_in()
 
 
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
-        time_out = time_exit(image, boxes_np[i])
-        last_plate_out = get_last_plate_out()
-        # PUSH DATA TO API FOR PLATE OUT
-        if get_plate is not None:
-            save_plate_out = match_plate_out(get_plate, time_out)
-            # push_data_out_api(last_plate_out, get_plate)
-            last_plate_out = get_plate
+        # time_out = time_exit(image, boxes_np[i])
+        # last_plate_out = get_last_plate_out()
+        # # PUSH DATA TO API FOR PLATE OUT
+        # if get_plate is not None:
+        #     save_plate_out = match_plate_out(get_plate, time_out)
+        #     # push_data_out_api(last_plate_out, get_plate)
+        #     last_plate_out = get_plate
         
         # ------------------------------------------------------------------------------------------------------
 
@@ -549,6 +544,7 @@ def main():
             break
         
         results = yolo_predictions(frame, net)
+        
 
         cv2.namedWindow('YOLO',cv2.WINDOW_KEEPRATIO)
         cv2.imshow('YOLO',results)
@@ -558,6 +554,8 @@ def main():
         
     cv2.destroyAllWindows()
     cap.release()
+
+
 
 
 
