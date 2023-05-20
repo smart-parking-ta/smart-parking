@@ -30,9 +30,7 @@ app.use(connectMqtt);
 // });
 
 //function untuk merestore dari blockchain ke database
-async function restoreFromBlockchain() {
-  
-}
+async function restoreFromBlockchain() {}
 
 //test endpoint untuk retrieve get order dan getUserOrderInfo
 app.get("/testRetrieveBlockchain", async (req, res) => {
@@ -396,6 +394,16 @@ async function authenticateUserIn(plat_number) {
 
     if (!result || !result.rows || !result.rows.length) {
       throw new Error("Unauthorized user");
+    }
+
+    const user_id = result.rows[0].user_id;
+
+    const isUserAlreadyIn = await pool.query(
+      `SELECT * FROM orders_detail WHERE user_id = '${user_id}' AND status = 'NOT PAID'`
+    );
+
+    if (isUserAlreadyIn.rows.length) {
+      throw new Error("User already in");
     }
 
     return result.rows[0];
