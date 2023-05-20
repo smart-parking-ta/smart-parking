@@ -1,6 +1,9 @@
 const mqtt = require("mqtt");
 require("dotenv").config();
 
+//variable untuk menghitung berapa kali reconnect
+let counterReconnect = 0;
+
 const connectMqtt = (req, res, next) => {
   const host = process.env.HOST_MQTT;
   const port = process.env.PORT_MQTT;
@@ -21,6 +24,7 @@ const connectMqtt = (req, res, next) => {
 
   //ketika state sudah connect, maka akan log ke console bahwa sudah connect
   client.on("connect", () => {
+    counterReconnect = 0;
     console.log(`Connected to ${connectUrl}`);
     req.mqtt = client;
     next();
@@ -32,6 +36,13 @@ const connectMqtt = (req, res, next) => {
 
   client.on("reconnect", () => {
     console.log("Attempting to reconnect to broker...");
+    counterReconnect++;
+
+    //jika reconnect sudah melebihi 5 kali, maka akan exit program
+    if (counterReconnect > 5) {
+      console.log("Reconnect failed, exiting...");
+      process.exit(1);
+    }
   });
 
   client.on("offline", () => {
