@@ -18,6 +18,9 @@ extern "C"
 #define MQTT_HOST IPAddress(192, 168, 43, 213)
 #define MQTT_PORT 1883
 
+#define CLIENT_USERNAME "esp32-checkIn"
+#define CLIENT_PASSWORD "beybladegila123"
+
 // Servo Variable
 Servo myservo;
 int pos = 170;
@@ -273,6 +276,7 @@ void setup()
 
     WiFi.onEvent(WiFiEvent);
 
+    mqttClient.setCredentials(CLIENT_USERNAME, CLIENT_PASSWORD);
     mqttClient.onConnect(onMqttConnect);
     mqttClient.onDisconnect(onMqttDisconnect);
     mqttClient.onSubscribe(onMqttSubscribe);
