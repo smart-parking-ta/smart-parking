@@ -5,6 +5,8 @@ import { Route, Routes} from "react-router-dom";
 import ConfirmOTP from './views/ConfirmOTP';
 import { initializeApp } from "firebase/app";
 import Dashboard from './views/Dashboard';
+import TopUpBalance from './views/TopUpBalance';
+import TopUpSuccess from './views/TopUpSuccess';
 
 function App() {
   const firebaseConfig = {
@@ -23,27 +25,14 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-      <div class="w-full max-w-sm">
-        
         <Routes>
           <Route exact path="/" element={<SignUp />} />
           <Route exact path="/signin" element={<SignIn />} />
           <Route exact path="/confirm-otp" element={<ConfirmOTP />} />
           <Route exact path="/dashboard" element={<Dashboard />} />
+          <Route exact path="/topup" element={<TopUpBalance />} />
+          <Route exact path="/topup-success" element={<TopUpSuccess />} />
         </Routes>
-      </div>
-        {/* <img src={logo} className="App-logo" alt="logo" />
-        <p className="text-3xl font-bold underline text-red-500">
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a> */}
       </header>
     </div>
   );

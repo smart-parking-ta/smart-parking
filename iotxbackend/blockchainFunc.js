@@ -3,7 +3,7 @@ const Web3 = require("web3");
 const web3 = new Web3("https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD");
 require("dotenv").config();
 
-const contractAddress = "0x01E42785E82bf8E037B0a3DB01EC0d47281fdCce";
+const contractAddress = "0x313FF90CbCBFb3b9e3528ae22166388De9a69D21";
 const accountAddress = process.env.ACCOUNT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 
