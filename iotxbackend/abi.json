@@ -77,7 +77,7 @@
 			},
 			{
 				"internalType": "string",
-				"name": "_plat_number",
+				"name": "_plate_number",
 				"type": "string"
 			}
 		],
@@ -160,7 +160,7 @@
 			},
 			{
 				"internalType": "string",
-				"name": "plat_number",
+				"name": "plate_number",
 				"type": "string"
 			},
 			{
