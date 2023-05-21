@@ -1,15 +1,19 @@
 const mqtt = require("mqtt");
+const fs = require("fs");
 require("dotenv").config();
 
 //variable untuk menghitung berapa kali reconnect
 let counterReconnect = 0;
 
+const ca = fs.readFileSync("../certs/ca.crt").toString();
+
+//fungsi untuk connect ke broker mqtt
 const connectMqtt = (req, res, next) => {
   const host = process.env.HOST_MQTT;
   const port = process.env.PORT_MQTT;
   const clientId = `mqtt_${Math.random().toString(16).slice(3)}`;
 
-  const connectUrl = `mqtt://${host}:${port}`;
+  const connectUrl = `mqtts://${host}:${port}`;
 
   //unisiasi client mqtt dan jika memang error connect akan dilakukan reconnect
   //dengan periode 5 detik
@@ -20,6 +24,7 @@ const connectMqtt = (req, res, next) => {
     clean: true,
     connectTimeout: 4000,
     reconnectPeriod: 5000,
+    ca,
   });
 
   //ketika state sudah connect, maka akan log ke console bahwa sudah connect

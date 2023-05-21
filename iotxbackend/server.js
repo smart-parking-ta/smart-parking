@@ -256,12 +256,11 @@ app.post(
   async (req, res) => {
     try {
       //mengubah waktu time exit dengan format timestamp menjadi unix timestamp
-      console.log("TIME EXIT", req.booking_data_to_alter.time_exit);
       let date_when_check_out = new Date(req.booking_data_to_alter.time_exit);
       let time_exit_unixTimeStamp = Math.floor(
         date_when_check_out.getTime() / 1000
       );
-      console.log("TIME EXIT UNIX TIMESTAMP", time_exit_unixTimeStamp);
+
       //fungsi untuk mengirim data ke blockchain network
       await insertExit(
         req.booking_data_to_alter.booking_id,
