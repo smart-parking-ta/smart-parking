@@ -7,6 +7,7 @@ import { initializeApp } from "firebase/app";
 import Dashboard from './views/Dashboard';
 import TopUpBalance from './views/TopUpBalance';
 import TopUpSuccess from './views/TopUpSuccess';
+import ETicket from './views/E-ticket';
 
 function App() {
   const firebaseConfig = {
@@ -32,6 +33,7 @@ function App() {
           <Route exact path="/dashboard" element={<Dashboard />} />
           <Route exact path="/topup" element={<TopUpBalance />} />
           <Route exact path="/topup-success" element={<TopUpSuccess />} />
+          <Route exact path="/e-ticket" element={<ETicket />} />
         </Routes>
       </header>
     </div>

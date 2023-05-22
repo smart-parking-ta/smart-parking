@@ -6,8 +6,9 @@ function Dashboard(){
     return(
         <div class="w-full">
             <div class="container px-5 py-24 mx-auto flex flex-wrap w-full">
-            <div className='flex justify-end w-full '>
-                <button onClick={()=>navigate('/')} className='button bg-black p-2 rounded-full bg-[#425061] text-xs py-3 px-8'>Log Out</button>
+            <div className='flex justify-end w-full space-x-4 '>
+                <button onClick={()=>navigate('/e-ticket')} className='bg-[#445263] hover:bg-blue-200 hover:text-gray-700 text-white font-medium py-3 px-16 text-xs rounded-full focus:outline-none focus:shadow-outline'>E-Ticket</button>
+                <button onClick={()=>navigate('/')} className='bg-[#445263] hover:bg-blue-200 hover:text-gray-700 text-white font-medium py-3 px-16 text-xs rounded-full focus:outline-none focus:shadow-outline'>Log Out</button>
             </div>
             <div class="flex w-full justify-center p-4">
             <div class="mx-4 max-w-sm p-10 bg-gradient-to-r g-gradient-to-b from-teal-200 to-blue-50 border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
