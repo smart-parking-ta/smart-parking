@@ -1,6 +1,3 @@
-/*
-This example uses FreeRTOS softwaretimers as there is no built-in Ticker library
-*/
 #include <stdio.h>
 #include <string.h>
 #include <WiFi.h>
@@ -38,7 +35,7 @@ float distanceInch;
 bool checkInPass = false;
 bool checkOutPass = false;
 
-// current state for car pass or out status
+// Current state for car pass or out status
 bool carPassBarrierIn = false;
 bool carPassBarrierOut = false;
 
@@ -71,8 +68,8 @@ void WiFiEvent(WiFiEvent_t event)
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
         Serial.println("WiFi lost connection");
-        // xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
-        // xTimerStart(wifiReconnectTimer, 0);
+        xTimerStop(mqttReconnectTimer, 0); // ensure we don't reconnect to MQTT while reconnecting to Wi-Fi
+        xTimerStart(wifiReconnectTimer, 0);
         break;
     }
 }
@@ -85,10 +82,6 @@ void onMqttConnect(bool sessionPresent)
     uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkIn", 1);
     Serial.print("Subscribing at QoS 1, packetId: ");
     Serial.println(packetIdSub1);
-
-    // uint16_t packetIdSub2 = mqttClient.subscribe("backend/checkOut", 2);
-    // Serial.print("Subscribing at QoS 2, packetId: ");
-    // Serial.println(packetIdSub2);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -203,7 +196,7 @@ void onMqttPublish(uint16_t packetId)
 void barrierOpen()
 {
     for (pos = 170; pos >= 80; pos -= 1)
-    { // goes from 0 degrees to 180 degrees
+    { // goes from 170 degrees to 80 degrees
         // in steps of 1 degree
         myservo.write(pos); // tell servo to go to position in variable 'pos'
         delay(15);          // waits 15ms for the servo to reach the position
@@ -214,7 +207,7 @@ void barrierOpen()
 void barrierClosed()
 {
     for (pos = 80; pos <= 170; pos += 1)
-    { // goes from 0 degrees to 180 degrees
+    { // goes from 80 degrees to 170 degrees
         // in steps of 1 degree
         myservo.write(pos); // tell servo to go to position in variable 'pos'
         delay(15);          // waits 15ms for the servo to reach the position
@@ -290,9 +283,6 @@ void setup()
 
 void loop()
 {
-    // buat kondisi jika ultrasonik perlu dinyalain atau ngga
-    // state apa yang bikin ultrasonik itu aktif atau inaktif
-
     // jika state sudah open, maka ultrasonik aktif
     if (checkInPass)
     {
@@ -309,13 +299,13 @@ void loop()
         if (distanceCm >= 10 && carPassBarrierIn == true)
         {
             ultrasonicPublishClose("checkIn");
+
+            // Masalahnya kalau pake variabel checkInPass false di subscribe itu harus jalanin servo yang perlu beberapa detik
+            // sedangkan disini itu terus loop tiap frame jadinya beberapa loop ini statenya masih checkInPass true;
+            // jadi memerlukan delay agar tidak infinite loop
             delay(2000);
             carPassBarrierIn = false;
         }
-
-        // Masalahnya kalau pake variabel checkInPass false di subscribe itu harus jalanin servo yang perlu beberapa detik
-        // sedangkan disini itu terus loop tiap frame jadinya beberapa loop ini statenya masih checkInPass true;
-        // jadinya solusinya menggunakan delay
     }
 
     if (checkOutPass)
