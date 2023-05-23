@@ -32,8 +32,24 @@ async function restoreFromBlockchain() {}
 
 //test endpoint untuk retrieve get order dan getUserOrderInfo
 app.get("/testRetrieveBlockchain", async (req, res) => {
-  const beyblade = await getUserOrderInfo(1);
+  const beyblade = await getUserOrderInfo(9);
   const orderInfo = await getOrderDetail(1);
+
+  // //MULAI DARI SINI
+
+  // //variable yang merepresentasikan id user
+  // let user_id = 0;
+
+  // //let order;
+
+  // //looping dari tiap user yang ada
+  // while(getUserOrderInfo(user_id) )
+  //   //dari tiap user, dilooping lagi dari order_list
+  //     //insert data dari tiap loop ini ke database
+
+  // //Drawbacks dari algoritma di atas adalah O(n^2)
+  // //SAMPAI SINI
+
   res.status(202).send(beyblade).end();
 });
 
@@ -262,11 +278,15 @@ app.post(
       );
 
       //fungsi untuk mengirim data ke blockchain network
-      await insertExit(
+      const blockchainInsertExit = await insertExit(
         req.booking_data_to_alter.booking_id,
         time_exit_unixTimeStamp,
         req.booking_data_to_alter.price
       );
+
+      if (blockchainInsertExit !== "success") {
+        throw new Error(blockchainInsertExit);
+      }
 
       //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
       const mqttClient = req.mqtt;
