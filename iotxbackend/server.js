@@ -16,8 +16,6 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-app.use(connectMqtt);
-
 //endpoint buat tes bisa terhubung ke database atau tidak
 // app.get("/", async (req, res) => {
 //   const result_query = await pool.query("SELECT * FROM parking_users");
@@ -35,8 +33,8 @@ async function restoreFromBlockchain() {}
 //test endpoint untuk retrieve get order dan getUserOrderInfo
 app.get("/testRetrieveBlockchain", async (req, res) => {
   const beyblade = await getUserOrderInfo(1);
-  const orderInfo = await getOrderDetail(106);
-  res.status(202).send(orderInfo).end();
+  const orderInfo = await getOrderDetail(1);
+  res.status(202).send(beyblade).end();
 });
 
 //endpoint untuk topup balance di database dan blockchain
@@ -147,6 +145,7 @@ app.post(
 //endpoint untuk login users
 app.post(
   "/checkIn",
+  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -217,6 +216,7 @@ app.post(
 //endpoint untuk logout users
 app.post(
   "/checkOut",
+  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -411,6 +411,7 @@ async function authenticateUserIn(plat_number) {
   }
 }
 
+//fungsi untuk menghitung harga penyewaan parkir berdasarkan waktu masuk dan keluar
 async function calculatePrice(time_exit, time_enter) {
   try {
     //ini perlu ambil bagian jamnya aja
