@@ -14,7 +14,7 @@ contract SmartParking {
   }
 
   mapping(uint256 => Order) orders;
-  mapping(uint256 => OrderDetail) public ordersDetail;
+  mapping(uint256 => OrderDetail) ordersDetail;
 
   enum Status {NOT_PAID, PAID}
 
@@ -33,9 +33,14 @@ contract SmartParking {
       Status status;
   }
 
-  function userOrderInfo(uint256 _user_id) public view returns (
+  function getUserInfo(uint256 _user_id) public onlyAdmin view returns (
     uint256 user_id, uint256 balance, string memory plate_number, uint256[] memory order_id){
       return (orders[_user_id].user_id, orders[_user_id].balance, orders[_user_id].plate_number, orders[_user_id].order_id);
+  }
+
+  function getOrderDetail(uint256 _order_id) public onlyAdmin view returns (
+    uint256 user_id, uint256 time_enter, uint256 time_exit, uint256 price, Status status){
+      return (ordersDetail[_order_id].user_id, ordersDetail[_order_id].time_enter, ordersDetail[_order_id].time_exit, ordersDetail[_order_id].price, ordersDetail[_order_id].status);
   }
 
   function userRegister(uint256 _user_id, string memory _plate_number) public onlyAdmin {

@@ -3,7 +3,7 @@ const Web3 = require("web3");
 const web3 = new Web3("https://polygon-mumbai.g.alchemy.com/v2/qwI6nWN1DdnpMQ_3ZOxe0thDR3NHsLBD");
 require("dotenv").config();
 
-const contractAddress = "0x313FF90CbCBFb3b9e3528ae22166388De9a69D21";
+const contractAddress = "0x10b8F7820deB70a60c087Ad4e0056511dEdCEa87";
 const accountAddress = process.env.ACCOUNT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 
@@ -79,7 +79,7 @@ const insertExit = async (order_id, time_exit, price) => {
 };
 
 const getUserOrderInfo = async (user_id) => {
-  const data = await contract.methods.userOrderInfo(user_id).call();
+  const data = await contract.methods.getUserInfo(user_id).call();
   const newData = {
     user_id: parseInt(data.user_id),
     balance: parseInt(data.balance),
@@ -91,7 +91,7 @@ const getUserOrderInfo = async (user_id) => {
 }
 
 const getOrderDetail = async (order_id) => {
-  const data = await contract.methods.ordersDetail(order_id).call();
+  const data = await contract.methods.getOrderDetail(order_id).call();
   const newData = {
     user_id: parseInt(data.user_id),
     time_enter: parseInt(data.time_enter),
@@ -102,9 +102,5 @@ const getOrderDetail = async (order_id) => {
   console.log(newData)
   return newData;
 }
-
-// Uncomment this for test read data from contract
-// getUserOrderInfo(1)
-// getOrderDetail(1)
 
 module.exports = { userRegister, topUpBalance, addOrder, insertExit, getUserOrderInfo, getOrderDetail };
