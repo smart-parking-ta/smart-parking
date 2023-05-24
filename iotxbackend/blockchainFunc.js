@@ -108,6 +108,28 @@ const insertExit = async (order_id, time_exit, price) => {
   }
 };
 
+const getUserOrderInfo1 = async (userId) => {
+  try {
+    const tx = {
+      from: accountAddress,
+      to: contractAddress,
+      gas: 150000,
+      data: contract.methods.getUserInfo(user_id).encodeABI(),
+    };
+    const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
+
+    await web3.eth
+      .sendSignedTransaction(signature.rawTransaction)
+      .on("receipt", async (receipt) => {
+        console.log(receipt.status);
+      });
+    return "success";
+  } catch (err) {
+    console.log(err.message);
+    return err;
+  }
+};
+
 const getUserOrderInfo = async (user_id) => {
   try {
     const data = await contract.methods.getUserInfo(user_id).call();
