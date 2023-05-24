@@ -277,11 +277,11 @@ void ultrasonicPublishClose(char phase[])
 
     if (strcmp(phase, "checkIn") == 0)
     {
-        mqttClient.publish("backend/checkIn", 1, false, "CLOSE");
+        mqttClient.publish("backend/checkIn", 1, true, "CLOSE");
     }
     else if (strcmp(phase, "checkOut") == 0)
     {
-        mqttClient.publish("backend/checkOut", 1, false, "CLOSE");
+        mqttClient.publish("backend/checkOut", 1, true, "CLOSE");
     }
 }
 
