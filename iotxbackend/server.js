@@ -32,7 +32,7 @@ async function restoreFromBlockchain() {}
 
 //test endpoint untuk retrieve get order dan getUserOrderInfo
 app.get("/testRetrieveBlockchain", async (req, res) => {
-  const beyblade = await getUserOrderInfo(9);
+  const beyblade = await getUserOrderInfo(1);
   const orderInfo = await getOrderDetail(1);
 
   // //MULAI DARI SINI
@@ -43,7 +43,7 @@ app.get("/testRetrieveBlockchain", async (req, res) => {
   // //let order;
 
   // //looping dari tiap user yang ada
-  // while(getUserOrderInfo(user_id) )
+  // while(getUserOrderInfo(user_id))
   //   //dari tiap user, dilooping lagi dari order_list
   //     //insert data dari tiap loop ini ke database
 
@@ -159,9 +159,9 @@ app.post(
 );
 
 //endpoint untuk login users
+//sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkIn",
-  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -201,24 +201,28 @@ app.post(
       );
 
       // fungsi untuk mengirim data ke blockchain network
-      await addOrder(
+      const blockchainAddOrder = await addOrder(
         req.insert_result_check_in.user_id,
         req.insert_result_check_in.booking_id,
         time_enter_unixTimeStamp
       );
 
+      if (blockchainAddOrder !== "success") {
+        throw new Error(blockchainAddOrder);
+      }
+
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      const mqttClient = req.mqtt;
-      mqttClient.publish(
-        "backend/checkIn",
-        "OPEN",
-        { qos: 1, retain: true },
-        (error) => {
-          if (error) {
-            console.log(error);
-          }
-        }
-      );
+      // const mqttClient = req.mqtt;
+      // mqttClient.publish(
+      //   "backend/checkIn",
+      //   "OPEN",
+      //   { qos: 1, retain: true },
+      //   (error) => {
+      //     if (error) {
+      //       console.log(error);
+      //     }
+      //   }
+      // );
 
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
@@ -230,9 +234,9 @@ app.post(
 );
 
 //endpoint untuk logout users
+//sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkOut",
-  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -289,17 +293,17 @@ app.post(
       }
 
       //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      const mqttClient = req.mqtt;
-      mqttClient.publish(
-        "backend/checkOut",
-        "OPEN",
-        { qos: 1, retain: true },
-        (error) => {
-          if (error) {
-            console.log(error);
-          }
-        }
-      );
+      // const mqttClient = req.mqtt;
+      // mqttClient.publish(
+      //   "backend/checkOut",
+      //   "OPEN",
+      //   { qos: 1, retain: true },
+      //   (error) => {
+      //     if (error) {
+      //       console.log(error);
+      //     }
+      //   }
+      // );
 
       await pool.query("COMMIT;");
       res.status(202).send("check-out berhasil");
