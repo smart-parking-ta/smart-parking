@@ -27,30 +27,117 @@ app.use(bodyParser.json());
 //   res.json("HOORAY");
 // });
 
-//function untuk merestore dari blockchain ke database
-async function restoreFromBlockchain() {}
+//fungsi untuk menjadikan segala number yang length < 2, ditambahkan 0 di depan angka tersebut
+function padTo2Digits(num) {
+  return num.toString().padStart(2, "0");
+}
 
-//test endpoint untuk retrieve get order dan getUserOrderInfo
-app.get("/testRetrieveBlockchain", async (req, res) => {
-  const beyblade = await getUserOrderInfo(1);
-  const orderInfo = await getOrderDetail(1);
+//endpoint untuk restore database (parking_users dan orders_detail) dari blockchain ke database
+app.post("/retrieveBlockchain", async (req, res) => {
+  //MULAI DARI SINI
 
-  // //MULAI DARI SINI
+  try {
+    //Menghapus semua data di blockchain
+    await pool.query(`TRUNCATE TABLE parking_users CASCADE`);
 
-  // //variable yang merepresentasikan id user
-  // let user_id = 0;
+    //variable yang merepresentasikan id user
+    let user_id = 1;
 
-  // //let order;
+    let parking_user = await getUserOrderInfo(user_id);
+    //looping dari tiap user yang ada
+    while (parking_user.plate_number !== "") {
+      //variable untuk menyimpan booking list dari tiap user
+      const orders_user = parking_user.order_list;
 
-  // //looping dari tiap user yang ada
-  // while(getUserOrderInfo(user_id))
-  //   //dari tiap user, dilooping lagi dari order_list
-  //     //insert data dari tiap loop ini ke database
+      //insert parking_user ke database
+      await pool.query(
+        `INSERT INTO parking_users (user_id, plat_number, balance) VALUES ('${parking_user.user_id}','${parking_user.plate_number}', '${parking_user.balance}') RETURNING *`
+      );
 
-  // //Drawbacks dari algoritma di atas adalah O(n^2)
-  // //SAMPAI SINI
+      //dari tiap user, dilooping lagi dari order_list
+      for (let i = 0; i < orders_user.length; i++) {
+        //menyimpan hasil getOrderDetail (function blockchain) ke variable getOrder
+        const getOrder = await getOrderDetail(orders_user[i]);
+        const booking_id = orders_user[i];
 
-  res.status(202).send(beyblade).end();
+        //convert waktu time_enter dan time_exit dalam bentuk timestamp YY-MM-DD hh-mm-ss
+        const time_enter_unixTimeStamp = getOrder.time_enter;
+        const time_exit_unixTimeStamp = getOrder.time_exit;
+
+        //mengubah unixtimestamp menjadi timestamp
+        const dateEnter = new Date(time_enter_unixTimeStamp * 1000);
+        const dateExit = new Date(time_exit_unixTimeStamp * 1000);
+
+        //mendapatkan waktu dalam jam, menit, dan detik
+        const hoursEnter = dateEnter.getHours();
+        const minutesEnter = dateEnter.getMinutes();
+        const secondsEnter = dateEnter.getSeconds();
+
+        const hoursExit = dateExit.getHours();
+        const minutesExit = dateExit.getMinutes();
+        const secondsExit = dateExit.getSeconds();
+
+        //meng-arrange waktu menjadi hh-mm-ss
+        const timeEnter = `${padTo2Digits(hoursEnter)}:${padTo2Digits(
+          minutesEnter
+        )}:${padTo2Digits(secondsEnter)}`;
+
+        const timeExit = `${padTo2Digits(hoursExit)}:${padTo2Digits(
+          minutesExit
+        )}:${padTo2Digits(secondsExit)}`;
+
+        //mengambil yang sebelumnya bentuk Date, menjadi masing-masing (tahun, bulan, dan hari)
+        const yearEnter = dateEnter.getFullYear();
+        const monthEnter = padTo2Digits(dateEnter.getMonth() + 1);
+        const dayEnter = padTo2Digits(dateEnter.getDate());
+
+        const yearExit = dateExit.getFullYear();
+        const monthExit = padTo2Digits(dateExit.getMonth() + 1);
+        const dayExit = padTo2Digits(dateExit.getDate());
+
+        //meng-arrange date menjadi terurut YY-MM-DD
+        const dateTimeEnter = `${yearEnter}-${monthEnter}-${dayEnter} ${timeEnter}`;
+        const dateTimeExit = `${yearExit}-${monthExit}-${dayExit} ${timeExit}`;
+
+        //query untuk insert ke database
+
+        //hash map untuk mengconvert data status paid/ not paid dari blockchain yg merupakan enum 1 atau 0 menjadi "PAID" atau "NOT PAID"
+        const hashPaidNotPaid = {
+          1: "PAID",
+          0: "NOT PAID",
+        };
+
+        //query insert orders_detail ke db
+        await pool.query(
+          `INSERT INTO orders_detail (booking_id, user_id, time_enter, time_exit, price, status) VALUES ('${booking_id}','${
+            getOrder.user_id
+          }', '${dateTimeEnter}', '${dateTimeExit}', '${getOrder.price}','${
+            hashPaidNotPaid[getOrder.status]
+          }') RETURNING *`
+        );
+      }
+
+      //Menyesuaikan sequence primary key dari masing-masing tabel di database
+      await pool.query(
+        `SELECT setval('parking_users_user_id_seq', (SELECT MAX(user_id) FROM parking_users)+1);`
+      );
+
+      await pool.query(
+        `SELECT setval('orders_detail_booking_id_seq', (SELECT MAX(booking_id) FROM orders_detail)+1);`
+      );
+
+      //beralih ke indeks berikutnya pada parking user index
+      user_id++;
+      parking_user = await getUserOrderInfo(user_id);
+    }
+
+    // Drawbacks dari algoritma di atas adalah O(n^2)
+
+    res.status(200).send("success").end();
+  } catch (err) {
+    console.log(err.message);
+    res.status(404).send("failed").end();
+  }
 });
 
 //endpoint untuk topup balance di database dan blockchain
@@ -162,6 +249,7 @@ app.post(
 //sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkIn",
+  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -212,17 +300,17 @@ app.post(
       }
 
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      // const mqttClient = req.mqtt;
-      // mqttClient.publish(
-      //   "backend/checkIn",
-      //   "OPEN",
-      //   { qos: 1, retain: true },
-      //   (error) => {
-      //     if (error) {
-      //       console.log(error);
-      //     }
-      //   }
-      // );
+      const mqttClient = req.mqtt;
+      mqttClient.publish(
+        "backend/checkIn",
+        "OPEN",
+        { qos: 1, retain: true },
+        (error) => {
+          if (error) {
+            console.log(error);
+          }
+        }
+      );
 
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
@@ -237,6 +325,7 @@ app.post(
 //sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkOut",
+  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
     const data = req.body;
@@ -293,17 +382,17 @@ app.post(
       }
 
       //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      // const mqttClient = req.mqtt;
-      // mqttClient.publish(
-      //   "backend/checkOut",
-      //   "OPEN",
-      //   { qos: 1, retain: true },
-      //   (error) => {
-      //     if (error) {
-      //       console.log(error);
-      //     }
-      //   }
-      // );
+      const mqttClient = req.mqtt;
+      mqttClient.publish(
+        "backend/checkOut",
+        "OPEN",
+        { qos: 1, retain: true },
+        (error) => {
+          if (error) {
+            console.log(error);
+          }
+        }
+      );
 
       await pool.query("COMMIT;");
       res.status(202).send("check-out berhasil");
