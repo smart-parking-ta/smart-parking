@@ -64,6 +64,7 @@ void WiFiEvent(WiFiEvent_t event)
         Serial.println("WiFi connected");
         Serial.println("IP address: ");
         Serial.println(WiFi.localIP());
+        xTimerStop(wifiReconnectTimer, 0);
         connectToMqtt();
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:

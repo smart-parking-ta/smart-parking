@@ -295,7 +295,7 @@ app.post(
         time_enter_unixTimeStamp
       );
 
-      if (blockchainAddOrder !== "success") {
+      if (blockchainAddOrder != "success") {
         throw new Error(blockchainAddOrder);
       }
 
@@ -377,7 +377,7 @@ app.post(
         req.booking_data_to_alter.price
       );
 
-      if (blockchainInsertExit !== "success") {
+      if (blockchainInsertExit != "success") {
         throw new Error(blockchainInsertExit);
       }
 
