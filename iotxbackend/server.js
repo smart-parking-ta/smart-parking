@@ -256,20 +256,25 @@ app.post(
 
     try {
       //hasil return dari fungsi authenticateUserIn
+      console.time("authenticateUser");
       const authenticatedUser = await authenticateUserIn(data.plat_number);
 
+      console.timeEnd("authenticateUser");
       //jika user tidak ditemukan
       if (typeof authenticatedUser !== "object") {
         throw new Error(authenticatedUser);
       }
 
       //menandakan transaksi dimulai
+      console.time("queryInsert");
       await pool.query("BEGIN;");
 
       //insert data ke tabel orders_detail dengan time_enter = NOW()
       const insert_result = await pool.query(
         `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${authenticatedUser.user_id}', NOW(), 'NOT PAID') RETURNING *`
       );
+
+      console.timeEnd("queryInsert");
 
       //menyimpan hasil data insert untuk selanjutnya digunakan di middleware selanjutnya
       req.insert_result_check_in = insert_result.rows[0];
@@ -283,11 +288,14 @@ app.post(
   async (req, res) => {
     try {
       //mengubah waktu dengan format timestamp menjadi unix timestamp
+      console.time("configureTime");
       let date_when_check_in = new Date(req.insert_result_check_in.time_enter);
       let time_enter_unixTimeStamp = Math.floor(
         date_when_check_in.getTime() / 1000
       );
+      console.timeEnd("configureTime");
 
+      console.time("blockchainFunction");
       // fungsi untuk mengirim data ke blockchain network
       const blockchainAddOrder = await addOrder(
         req.insert_result_check_in.user_id,
@@ -298,8 +306,12 @@ app.post(
       if (blockchainAddOrder != "success") {
         throw new Error(blockchainAddOrder);
       }
+      console.timeEnd("blockchainFunction");
+
+      await pool.query("COMMIT;");
 
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
+      console.time("mqttFunc");
       const mqttClient = req.mqtt;
       mqttClient.publish(
         "backend/checkIn",
@@ -307,12 +319,22 @@ app.post(
         { qos: 1, retain: true },
         (error) => {
           if (error) {
-            console.log(error);
+            throw new Error(error);
+          }
+        }
+      );
+      mqttClient.publish(
+        "esp32/oledIn",
+        "201",
+        { qos: 1, retain: true },
+        (error) => {
+          if (error) {
+            throw new Error(error);
           }
         }
       );
 
-      await pool.query("COMMIT;");
+      console.timeEnd("mqttFunc");
       res.status(201).send("check in berhasil").end();
     } catch (err) {
       await pool.query("ROLLBACK;");
@@ -389,7 +411,7 @@ app.post(
         { qos: 1, retain: true },
         (error) => {
           if (error) {
-            console.log(error);
+            throw new Error(error);
           }
         }
       );

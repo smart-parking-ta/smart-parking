@@ -74,6 +74,7 @@ void WiFiEvent(WiFiEvent_t event)
         Serial.println("WiFi connected");
         Serial.println("IP address: ");
         Serial.println(WiFi.localIP());
+        xTimerStop(wifiReconnectTimer, 0);
         connectToMqtt();
         break;
     case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -90,8 +91,11 @@ void onMqttConnect(bool sessionPresent)
     Serial.print("Session present: ");
     Serial.println(sessionPresent);
     uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkIn", 1);
+    uint16_t packetIdSub2 = mqttClient.subscribe("esp32/oledIn", 1);
     Serial.print("Subscribing at QoS 1, packetId: ");
     Serial.println(packetIdSub1);
+    Serial.print("Subscribing at QoS 1, packetId: ");
+    Serial.println(packetIdSub2);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -165,6 +169,9 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         {
             checkInPass = false;
             barrierClosed();
+            oled.clearDisplay();
+            oled.println("");
+            oled.display();
         }
         else
         {
@@ -187,6 +194,20 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         else
         {
             Serial.println("there is no condition for this payload input");
+        }
+    }
+    else
+    {
+        Serial.println("there is no condition for this topic");
+    }
+
+    if (strcmp(topic, "esp32/oledIn") == 0)
+    {
+        if (includeString(payload, "201"))
+        {
+            oled.clearDisplay();
+            oled.println("check-in berhasil");
+            oled.display();
         }
     }
     else
@@ -290,20 +311,22 @@ void setup()
 
     connectToWifi();
 
-      // initialize OLED display with I2C address 0x3C
-    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-      Serial.println(F("failed to start SSD1306 OLED"));
-      while (1);
+    // initialize OLED display with I2C address 0x3C
+    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+    {
+        Serial.println(F("failed to start SSD1306 OLED"));
+        while (1)
+            ;
     }
-  
+
     delay(2000);         // wait two seconds for initializing
     oled.clearDisplay(); // clear display
-  
-    oled.setTextSize(1);         // set text size
-    oled.setTextColor(WHITE);    // set text color
+
+    oled.setTextSize(1);        // set text size
+    oled.setTextColor(WHITE);   // set text color
     oled.setCursor(0, 2);       // set position to display (x,y)
     oled.println("Robotronix"); // set text
-    oled.display();              // display on OLED
+    oled.display();             // display on OLED
 }
 
 void loop()
