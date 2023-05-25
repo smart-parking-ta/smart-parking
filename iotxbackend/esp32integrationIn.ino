@@ -196,18 +196,51 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
             Serial.println("there is no condition for this payload input");
         }
     }
-    else
-    {
-        Serial.println("there is no condition for this topic");
-    }
-
-    if (strcmp(topic, "esp32/oledIn") == 0)
+    else if (strcmp(topic, "esp32/oledIn") == 0)
     {
         if (includeString(payload, "201"))
         {
             oled.clearDisplay();
-            oled.println("check-in berhasil");
+            oled.setCursor(0, 2);
+            oled.print("check-in berhasil");
             oled.display();
+        }
+        else if (includeString(payload, "400"))
+        {
+            oled.clearDisplay();
+            oled.setCursor(0, 2);
+            oled.println("Bad Request");
+            oled.display();
+            delay(1500);
+            oled.clearDisplay();
+            oled.println("");
+            oled.display();
+        }
+        else if (includeString(payload, "401"))
+        {
+            oled.clearDisplay();
+            oled.setCursor(0, 2);
+            oled.println("Unauthorized User");
+            oled.display();
+            delay(1500);
+            oled.clearDisplay();
+            oled.println("");
+            oled.display();
+        }
+        else if (includeString(payload, "403"))
+        {
+            oled.clearDisplay();
+            oled.setCursor(0, 2);
+            oled.println("User Already In");
+            oled.display();
+            delay(1500);
+            oled.clearDisplay();
+            oled.println("");
+            oled.display();
+        }
+        else
+        {
+            Serial.println("there is no condition for this payload input");
         }
     }
     else
