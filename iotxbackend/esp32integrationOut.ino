@@ -257,11 +257,11 @@ void ultrasonicPublishClose(char phase[])
 
     if (strcmp(phase, "checkIn") == 0)
     {
-        mqttClient.publish("backend/checkIn", 1, false, "CLOSE");
+        mqttClient.publish("backend/checkIn", 1, true, "CLOSE");
     }
     else if (strcmp(phase, "checkOut") == 0)
     {
-        mqttClient.publish("backend/checkOut", 1, false, "CLOSE");
+        mqttClient.publish("backend/checkOut", 1, true, "CLOSE");
     }
 }
 
@@ -291,20 +291,22 @@ void setup()
 
     connectToWifi();
 
-      // initialize OLED display with I2C address 0x3C
-    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
-      Serial.println(F("failed to start SSD1306 OLED"));
-      while (1);
+    // initialize OLED display with I2C address 0x3C
+    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+    {
+        Serial.println(F("failed to start SSD1306 OLED"));
+        while (1)
+            ;
     }
-  
+
     delay(2000);         // wait two seconds for initializing
     oled.clearDisplay(); // clear display
-  
-    oled.setTextSize(1);         // set text size
-    oled.setTextColor(WHITE);    // set text color
+
+    oled.setTextSize(1);        // set text size
+    oled.setTextColor(WHITE);   // set text color
     oled.setCursor(0, 2);       // set position to display (x,y)
     oled.println("Robotronix"); // set text
-    oled.display();              // display on OLED
+    oled.display();             // display on OLED
 }
 
 void loop()

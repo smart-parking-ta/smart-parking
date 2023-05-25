@@ -27,6 +27,22 @@ app.use(bodyParser.json());
 //   res.json("HOORAY");
 // });
 
+app.get("/testErrorCode", (req, res) => {
+  try {
+    let string = "beyblade";
+    if (string == "beyblade") {
+      // const error = new Error("Unauthorized User");
+      // error.code = "409";
+      // throw error;
+      throw new Error("Unathorized User");
+    }
+
+    res.status(200).send("OKE BANGET").end();
+  } catch (err) {
+    res.status(400).send(err).end();
+  }
+});
+
 //fungsi untuk menjadikan segala number yang length < 2, ditambahkan 0 di depan angka tersebut
 function padTo2Digits(num) {
   return num.toString().padStart(2, "0");
@@ -295,20 +311,20 @@ app.post(
       );
       console.timeEnd("configureTime");
 
-      console.time("blockchainFunction");
+      console.time("blockchainFunction1");
       // fungsi untuk mengirim data ke blockchain network
       const blockchainAddOrder = await addOrder(
         req.insert_result_check_in.user_id,
         req.insert_result_check_in.booking_id,
         time_enter_unixTimeStamp
       );
+      console.timeEnd("blockchainFunction1");
 
+      console.time("blockchainFunction2");
       if (blockchainAddOrder != "success") {
         throw new Error(blockchainAddOrder);
       }
-      console.timeEnd("blockchainFunction");
-
-      await pool.query("COMMIT;");
+      console.timeEnd("blockchainFunction2");
 
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
       console.time("mqttFunc");
@@ -335,6 +351,7 @@ app.post(
       );
 
       console.timeEnd("mqttFunc");
+      await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
     } catch (err) {
       await pool.query("ROLLBACK;");
