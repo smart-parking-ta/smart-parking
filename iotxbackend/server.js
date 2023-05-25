@@ -268,17 +268,24 @@ app.post(
   connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
+    const mqttClient = req.mqtt;
     const data = req.body;
-
+    let error = new Error();
     try {
-      //hasil return dari fungsi authenticateUserIn
+      if (req.mqttError) {
+        throw req.mqttError;
+      }
       console.time("authenticateUser");
+      //hasil return dari fungsi authenticateUserIn
       const authenticatedUser = await authenticateUserIn(data.plat_number);
 
+      //TEST
+      console.log("AUTHENTICATED USER", authenticatedUser);
+      console.log("apakah ini null?", authenticatedUser.user_id);
       console.timeEnd("authenticateUser");
       //jika user tidak ditemukan
-      if (typeof authenticatedUser !== "object") {
-        throw new Error(authenticatedUser);
+      if (authenticatedUser.user_id == undefined) {
+        throw authenticatedUser;
       }
 
       //menandakan transaksi dimulai
@@ -298,10 +305,26 @@ app.post(
       next();
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(401).send(err.message).end();
+
+      //mengirim message error ke mqtt client, kode 503 adalah error connect ke mqtt broker
+      if (err.code !== 503) {
+        mqttClient.publish(
+          "esp32/oledIn",
+          `${err.code}`,
+          { qos: 1, retain: true },
+          (err) => {
+            if (err) {
+              console.log(err);
+            }
+          }
+        );
+      }
+
+      res.status(err.code).send(err.messages).end();
     }
   },
   async (req, res) => {
+    let error = new Error();
     try {
       //mengubah waktu dengan format timestamp menjadi unix timestamp
       console.time("configureTime");
@@ -321,8 +344,11 @@ app.post(
       console.timeEnd("blockchainFunction1");
 
       console.time("blockchainFunction2");
+
       if (blockchainAddOrder != "success") {
-        throw new Error(blockchainAddOrder);
+        error.code = 500;
+        error.messages = "blockchain error";
+        throw error;
       }
       console.timeEnd("blockchainFunction2");
 
@@ -333,19 +359,27 @@ app.post(
         "backend/checkIn",
         "OPEN",
         { qos: 1, retain: true },
-        (error) => {
-          if (error) {
-            throw new Error(error);
+        (err) => {
+          if (err) {
+            console.log(err);
+            error.code = 500;
+            error.messages = "mqtt error";
+            throw error;
           }
         }
       );
+
+      //fungsi untuk mengirim data ke mqtt broker, khususnya untuk pemberian pesan di oled
       mqttClient.publish(
         "esp32/oledIn",
         "201",
         { qos: 1, retain: true },
-        (error) => {
-          if (error) {
-            throw new Error(error);
+        (err) => {
+          if (err) {
+            console.log(err);
+            error.code = 500;
+            error.messages = "mqtt error";
+            throw error;
           }
         }
       );
@@ -355,7 +389,7 @@ app.post(
       res.status(201).send("check in berhasil").end();
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(401).send(err.message).end();
+      res.status(err.code).send(err.messages).end();
     }
   }
 );
@@ -367,21 +401,30 @@ app.post(
   connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
+    const mqttClient = req.mqtt;
     const data = req.body;
 
+    let error = new Error();
+
     try {
+      if (req.mqttError) {
+        throw req.mqttError;
+      }
       //hasil return dari fungsi authenticateUserOut
       const authenticatedUser = await authenticateUserOut(data.plat_number);
-      if (typeof authenticatedUser !== "object") {
-        throw new Error(authenticatedUser);
+
+      //jika user tidak ditemukan atau terdapat error, maka akan dithrow error tersebut
+      if (authenticatedUser.user_id == undefined) {
+        throw authenticatedUser;
       }
       const price_rent_parking = authenticatedUser.price;
 
       await pool.query("BEGIN;");
       //jika saldo user < dari price print saldo tidak cukup
       if (authenticatedUser.balance < price_rent_parking) {
-        res.status(402).send("saldo tidak cukup");
-        return;
+        error.code = 402;
+        error.messages = "saldo tidak cukup";
+        throw error;
       } else {
         //jika saldo user > dari price maka kurangi saldo user dengan price
         await pool.query(
@@ -398,7 +441,22 @@ app.post(
       next();
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(401).send(err.message).end();
+
+      //mengirim message error ke mqtt client, kode 503 adalah error connect ke mqtt broker
+      if (err.code !== 503) {
+        mqttClient.publish(
+          "esp32/oledOut",
+          `${err.code}`,
+          { qos: 1, retain: true },
+          (err) => {
+            if (err) {
+              console.log(err);
+            }
+          }
+        );
+      }
+
+      res.status(err.code).send(err.messages).end();
     }
   },
   async (req, res) => {
@@ -417,7 +475,9 @@ app.post(
       );
 
       if (blockchainInsertExit != "success") {
-        throw new Error(blockchainInsertExit);
+        error.code = 500;
+        error.messages = "blockchain error";
+        throw error;
       }
 
       //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
@@ -426,9 +486,27 @@ app.post(
         "backend/checkOut",
         "OPEN",
         { qos: 1, retain: true },
-        (error) => {
-          if (error) {
-            throw new Error(error);
+        (err) => {
+          if (err) {
+            console.log(err);
+            error.code = 500;
+            error.messages = "mqtt error";
+            throw error;
+          }
+        }
+      );
+
+      //fungsi untuk mengirim data ke mqtt broker, khususnya untuk pemberian pesan di oled
+      mqttClient.publish(
+        "esp32/oledOut",
+        "201",
+        { qos: 1, retain: true },
+        (err) => {
+          if (err) {
+            console.log(err);
+            error.code = 500;
+            error.messages = "mqtt error";
+            throw error;
           }
         }
       );
@@ -437,19 +515,25 @@ app.post(
       res.status(202).send("check-out berhasil");
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(401).send(err.message).end();
+      res.status(err.code).send(err.messages).end();
     }
   }
 );
 
 //fungsi untuk otentikasi user saat keluar gerbang
 async function authenticateUserOut(plat_number) {
+  let error = new Error();
   try {
     if (!plat_number) {
-      throw new Error("plat_number is required");
+      error.code = 400;
+      error.messages = "plat_number is required";
+      throw error;
     }
+
     if (typeof plat_number !== "string") {
-      throw new Error("plat_number must be a string");
+      error.code = 400;
+      error.messages = "plat_number must be a string";
+      throw error;
     }
 
     await pool.query("BEGIN;");
@@ -461,7 +545,9 @@ async function authenticateUserOut(plat_number) {
 
     //error handler jika plat_number tidak terdaftar di database
     if (!result || !result.rows || !result.rows.length) {
-      throw new Error("Unauthorized User");
+      error.code = 401;
+      error.messages = "Unauthorized user";
+      throw error;
     }
 
     //mengambil data spesifik renting user terhadap sewa parkir
@@ -475,7 +561,9 @@ async function authenticateUserOut(plat_number) {
       !authenticate_user_result.rows ||
       !authenticate_user_result.rows.length
     ) {
-      throw new Error("there is no booking data from the user");
+      error.code = 404;
+      error.messages = "there is no booking data from the user";
+      throw error;
     }
 
     //query untuk edit time_exit
@@ -498,7 +586,9 @@ async function authenticateUserOut(plat_number) {
     );
 
     if (harga_tiket_parkir == null) {
-      throw new Error("Error in calculate price");
+      error.code = 500;
+      error.messages = "Error in calculate price";
+      throw error;
     }
 
     //query untuk update harga tiket parkir
@@ -525,18 +615,24 @@ async function authenticateUserOut(plat_number) {
     return user_data;
   } catch (err) {
     await pool.query("ROLLBACK;");
-    return err.message;
+    return err;
   }
 }
 
 //fungsi untuk otentikasi user saat masuk gerbang berdasarkan plat_number mereka
 async function authenticateUserIn(plat_number) {
+  let error = new Error();
   try {
     if (!plat_number) {
-      throw new Error("plat_number is required");
+      error.code = 400;
+      error.messages = "plat_number is required";
+      throw error;
     }
+
     if (typeof plat_number !== "string") {
-      throw new Error("plat_number must be a string");
+      error.code = 400;
+      error.messages = "plat_number must be a string";
+      throw error;
     }
 
     const result = await pool.query(
@@ -544,7 +640,9 @@ async function authenticateUserIn(plat_number) {
     );
 
     if (!result || !result.rows || !result.rows.length) {
-      throw new Error("Unauthorized user");
+      error.code = 401;
+      error.messages = "Unauthorized user";
+      throw error;
     }
 
     const user_id = result.rows[0].user_id;
@@ -554,12 +652,14 @@ async function authenticateUserIn(plat_number) {
     );
 
     if (isUserAlreadyIn.rows.length) {
-      throw new Error("User already in");
+      error.code = 403;
+      error.messages = "User already in";
+      throw error;
     }
 
     return result.rows[0];
   } catch (err) {
-    return err.message;
+    return err;
   }
 }
 
