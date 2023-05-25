@@ -5,7 +5,7 @@ const web3 = new Web3(
 );
 require("dotenv").config();
 
-const contractAddress = "0xB924d9678bC91693CD9A3E17c5Bd3fc9884aca15";
+const contractAddress = "0x43f9D2706D6692C4fa1d832b796dAD7463c6B20d";
 const accountAddress = process.env.ACCOUNT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 
