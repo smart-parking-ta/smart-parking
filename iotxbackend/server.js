@@ -512,7 +512,7 @@ app.post(
       );
 
       await pool.query("COMMIT;");
-      res.status(202).send("check-out berhasil");
+      res.status(201).send("check-out berhasil");
     } catch (err) {
       await pool.query("ROLLBACK;");
       res.status(err.code).send(err.messages).end();

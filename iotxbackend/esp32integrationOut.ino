@@ -91,8 +91,11 @@ void onMqttConnect(bool sessionPresent)
     Serial.print("Session present: ");
     Serial.println(sessionPresent);
     uint16_t packetIdSub1 = mqttClient.subscribe("backend/checkOut", 1);
+    uint16_t packetIdSub2 = mqttClient.subscribe("esp32/oledOut", 1);
     Serial.print("Subscribing at QoS 1, packetId: ");
     Serial.println(packetIdSub1);
+    Serial.print("Subscribing at QoS 1, packetId: ");
+    Serial.println(packetIdSub2);
 }
 
 void onMqttDisconnect(AsyncMqttClientDisconnectReason reason)
@@ -187,6 +190,9 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         {
             checkOutPass = false;
             barrierClosed();
+            oled.clearDisplay();
+            oled.println("");
+            oled.display();
         }
         else
         {
@@ -324,164 +330,164 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
     {
         Serial.println("there is no condition for this topic");
     }
+}
+void onMqttPublish(uint16_t packetId)
+{
+    Serial.println("Publish acknowledged.");
+    Serial.print("  packetId: ");
+    Serial.println(packetId);
+}
 
-    void onMqttPublish(uint16_t packetId)
+// fungsi untuk membuka barrier
+void barrierOpen()
+{
+    for (pos = 170; pos >= 80; pos -= 1)
+    { // goes from 170 degrees to 80 degrees
+        // in steps of 1 degree
+        myservo.write(pos); // tell servo to go to position in variable 'pos'
+        delay(15);          // waits 15ms for the servo to reach the position
+    }
+}
+
+// fungsi untuk menutup barrier
+void barrierClosed()
+{
+    for (pos = 80; pos <= 170; pos += 1)
+    { // goes from 80 degrees to 170 degrees
+        // in steps of 1 degree
+        myservo.write(pos); // tell servo to go to position in variable 'pos'
+        delay(15);          // waits 15ms for the servo to reach the position
+    }
+}
+
+// fungsi untuk mengaktifkan sensor ultrasonic
+void ultrasonicListen()
+{
+    // Clears the trigPin
+    digitalWrite(trigPin, LOW);
+    delayMicroseconds(2);
+    // Sets the trigPin on HIGH state for 10 micro seconds
+    digitalWrite(trigPin, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPin, LOW);
+
+    // Reads the echoPin, returns the sound wave travel time in microseconds
+    duration = pulseIn(echoPin, HIGH);
+
+    // Calculate the distance
+    distanceCm = duration * SOUND_SPEED / 2;
+
+    // Convert to inches
+    distanceInch = distanceCm * CM_TO_INCH;
+
+    // Prints the distance in the Serial Monitor
+    Serial.print("Distance (cm): ");
+    Serial.println(distanceCm);
+    delayMicroseconds(1000);
+}
+
+void ultrasonicPublishClose(char phase[])
+{
+    Serial.println("Publishing at Ultrasonic for Closing the Barrier");
+
+    if (strcmp(phase, "checkIn") == 0)
     {
-        Serial.println("Publish acknowledged.");
-        Serial.print("  packetId: ");
-        Serial.println(packetId);
+        mqttClient.publish("backend/checkIn", 1, true, "CLOSE");
+    }
+    else if (strcmp(phase, "checkOut") == 0)
+    {
+        mqttClient.publish("backend/checkOut", 1, true, "CLOSE");
+    }
+}
+
+void setup()
+{
+    Serial.begin(115200);
+    Serial.println();
+    Serial.println();
+    myservo.attach(13);
+
+    pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
+    pinMode(echoPin, INPUT);  // Sets the echoPin as an Input
+
+    mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
+    wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
+
+    WiFi.onEvent(WiFiEvent);
+
+    mqttClient.setCredentials(CLIENT_USERNAME, CLIENT_PASSWORD);
+    mqttClient.onConnect(onMqttConnect);
+    mqttClient.onDisconnect(onMqttDisconnect);
+    mqttClient.onSubscribe(onMqttSubscribe);
+    mqttClient.onUnsubscribe(onMqttUnsubscribe);
+    mqttClient.onMessage(onMqttMessage);
+    mqttClient.onPublish(onMqttPublish);
+    mqttClient.setServer(MQTT_HOST, MQTT_PORT);
+
+    connectToWifi();
+
+    // initialize OLED display with I2C address 0x3C
+    if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+    {
+        Serial.println(F("failed to start SSD1306 OLED"));
+        while (1)
+            ;
     }
 
-    // fungsi untuk membuka barrier
-    void barrierOpen()
+    delay(2000);         // wait two seconds for initializing
+    oled.clearDisplay(); // clear display
+
+    oled.setTextSize(1);        // set text size
+    oled.setTextColor(WHITE);   // set text color
+    oled.setCursor(0, 2);       // set position to display (x,y)
+    oled.println("Robotronix"); // set text
+    oled.display();             // display on OLED
+}
+
+void loop()
+{
+    // jika state sudah open, maka ultrasonik aktif
+    if (checkInPass)
     {
-        for (pos = 170; pos >= 80; pos -= 1)
-        { // goes from 170 degrees to 80 degrees
-            // in steps of 1 degree
-            myservo.write(pos); // tell servo to go to position in variable 'pos'
-            delay(15);          // waits 15ms for the servo to reach the position
-        }
-    }
+        ultrasonicListen();
 
-    // fungsi untuk menutup barrier
-    void barrierClosed()
-    {
-        for (pos = 80; pos <= 170; pos += 1)
-        { // goes from 80 degrees to 170 degrees
-            // in steps of 1 degree
-            myservo.write(pos); // tell servo to go to position in variable 'pos'
-            delay(15);          // waits 15ms for the servo to reach the position
-        }
-    }
-
-    // fungsi untuk mengaktifkan sensor ultrasonic
-    void ultrasonicListen()
-    {
-        // Clears the trigPin
-        digitalWrite(trigPin, LOW);
-        delayMicroseconds(2);
-        // Sets the trigPin on HIGH state for 10 micro seconds
-        digitalWrite(trigPin, HIGH);
-        delayMicroseconds(10);
-        digitalWrite(trigPin, LOW);
-
-        // Reads the echoPin, returns the sound wave travel time in microseconds
-        duration = pulseIn(echoPin, HIGH);
-
-        // Calculate the distance
-        distanceCm = duration * SOUND_SPEED / 2;
-
-        // Convert to inches
-        distanceInch = distanceCm * CM_TO_INCH;
-
-        // Prints the distance in the Serial Monitor
-        Serial.print("Distance (cm): ");
-        Serial.println(distanceCm);
-        delayMicroseconds(1000);
-    }
-
-    void ultrasonicPublishClose(char phase[])
-    {
-        Serial.println("Publishing at Ultrasonic for Closing the Barrier");
-
-        if (strcmp(phase, "checkIn") == 0)
+        // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierIn ke true
+        if (distanceCm >= 3 && distanceCm <= 5)
         {
-            mqttClient.publish("backend/checkIn", 1, true, "CLOSE");
+            carPassBarrierIn = true;
         }
-        else if (strcmp(phase, "checkOut") == 0)
+
+        // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
+        // publish message (closed ke topic backend/checkIn) dan mengubah status carPassBarrierIn = false
+        if (distanceCm >= 10 && carPassBarrierIn == true)
         {
-            mqttClient.publish("backend/checkOut", 1, true, "CLOSE");
+            ultrasonicPublishClose("checkIn");
+
+            // Masalahnya kalau pake variabel checkInPass false di subscribe itu harus jalanin servo yang perlu beberapa detik
+            // sedangkan disini itu terus loop tiap frame jadinya beberapa loop ini statenya masih checkInPass true;
+            // jadi memerlukan delay agar tidak infinite loop
+            delay(2000);
+            carPassBarrierIn = false;
         }
     }
 
-    void setup()
+    if (checkOutPass)
     {
-        Serial.begin(115200);
-        Serial.println();
-        Serial.println();
-        myservo.attach(13);
+        ultrasonicListen();
 
-        pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
-        pinMode(echoPin, INPUT);  // Sets the echoPin as an Input
-
-        mqttReconnectTimer = xTimerCreate("mqttTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToMqtt));
-        wifiReconnectTimer = xTimerCreate("wifiTimer", pdMS_TO_TICKS(2000), pdFALSE, (void *)0, reinterpret_cast<TimerCallbackFunction_t>(connectToWifi));
-
-        WiFi.onEvent(WiFiEvent);
-
-        mqttClient.setCredentials(CLIENT_USERNAME, CLIENT_PASSWORD);
-        mqttClient.onConnect(onMqttConnect);
-        mqttClient.onDisconnect(onMqttDisconnect);
-        mqttClient.onSubscribe(onMqttSubscribe);
-        mqttClient.onUnsubscribe(onMqttUnsubscribe);
-        mqttClient.onMessage(onMqttMessage);
-        mqttClient.onPublish(onMqttPublish);
-        mqttClient.setServer(MQTT_HOST, MQTT_PORT);
-
-        connectToWifi();
-
-        // initialize OLED display with I2C address 0x3C
-        if (!oled.begin(SSD1306_SWITCHCAPVCC, 0x3C))
+        // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierOut ke true
+        if (distanceCm >= 3 && distanceCm <= 5)
         {
-            Serial.println(F("failed to start SSD1306 OLED"));
-            while (1)
-                ;
+            carPassBarrierOut = true;
         }
 
-        delay(2000);         // wait two seconds for initializing
-        oled.clearDisplay(); // clear display
-
-        oled.setTextSize(1);        // set text size
-        oled.setTextColor(WHITE);   // set text color
-        oled.setCursor(0, 2);       // set position to display (x,y)
-        oled.println("Robotronix"); // set text
-        oled.display();             // display on OLED
-    }
-
-    void loop()
-    {
-        // jika state sudah open, maka ultrasonik aktif
-        if (checkInPass)
+        // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
+        // publish message (closed ke topic backend/checkOut) dan mengubah status carPassBarrierOut = false
+        if (distanceCm >= 10 && carPassBarrierOut == true)
         {
-            ultrasonicListen();
-
-            // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierIn ke true
-            if (distanceCm >= 3 && distanceCm <= 5)
-            {
-                carPassBarrierIn = true;
-            }
-
-            // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
-            // publish message (closed ke topic backend/checkIn) dan mengubah status carPassBarrierIn = false
-            if (distanceCm >= 10 && carPassBarrierIn == true)
-            {
-                ultrasonicPublishClose("checkIn");
-
-                // Masalahnya kalau pake variabel checkInPass false di subscribe itu harus jalanin servo yang perlu beberapa detik
-                // sedangkan disini itu terus loop tiap frame jadinya beberapa loop ini statenya masih checkInPass true;
-                // jadi memerlukan delay agar tidak infinite loop
-                delay(2000);
-                carPassBarrierIn = false;
-            }
-        }
-
-        if (checkOutPass)
-        {
-            ultrasonicListen();
-
-            // jika jarak ultrasonik ke mobil >= 3 meter dan <= 5 meter, maka akan ngetrigger state carPassBarrierOut ke true
-            if (distanceCm >= 3 && distanceCm <= 5)
-            {
-                carPassBarrierOut = true;
-            }
-
-            // jika dalam proses nya, sensor ultrasonic telah selesai mendeteksi mobil hingga ujung, maka akan mentrigger barrier untuk ditutup
-            // publish message (closed ke topic backend/checkOut) dan mengubah status carPassBarrierOut = false
-            if (distanceCm >= 10 && carPassBarrierOut == true)
-            {
-                ultrasonicPublishClose("checkOut");
-                delay(2000);
-                carPassBarrierOut = false;
-            }
+            ultrasonicPublishClose("checkOut");
+            delay(2000);
+            carPassBarrierOut = false;
         }
     }
+}

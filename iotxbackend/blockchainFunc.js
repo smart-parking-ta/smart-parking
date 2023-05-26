@@ -6,7 +6,7 @@ const web3 = new Web3(
 require("dotenv").config();
 
 // Please reset db before uncomment contract address below
-// const contractAddress = "0x135478e1D69E177B2e0c653D995962F43F8EDF68";
+const contractAddress = "0x135478e1D69E177B2e0c653D995962F43F8EDF68";
 const accountAddress = process.env.ACCOUNT_ADDRESS;
 const privateKey = process.env.PRIVATE_KEY;
 
