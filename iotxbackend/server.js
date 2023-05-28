@@ -10,6 +10,7 @@ const {
   getOrderDetail,
 } = require("./blockchainFunc");
 const { connectMqtt } = require("./connectMqtt");
+const { sendOTP } = require("./OTPCommonJS");
 
 const app = express();
 
@@ -215,11 +216,12 @@ app.post(
   }
 );
 
-//endpoint untuk register users (ini masih mentah banget, ga ada autentikasi 2 faktor dll)
+//endpoint untuk register users
 app.post(
   "/register",
   async (req, res, next) => {
     try {
+      const error = new Error();
       const data = req.body;
 
       //validasi data yang diterima
@@ -232,34 +234,98 @@ app.post(
 
       await pool.query("BEGIN;");
 
+      //cek apakah nomor polisi tersebut sudah terdaftar
+      const checkPlatNumber = await pool.query(
+        `SELECT * FROM parking_users WHERE plat_number = '${data.plat_number}'`
+      );
+
+      if (checkPlatNumber.rows.length) {
+        error.code = 403;
+        error.messages = "User already registered";
+        throw error;
+      }
+
+      //cek apakah kombinasi nik dan nomor polisi ada di samsat dummy
+      const checkCombinationNikPlatNumber = await pool.query(
+        `SELECT * FROM samsat_dummy WHERE nik = '${data.nik}' AND plat_number = '${data.plat_number}'`
+      );
+
+      if (
+        !checkCombinationNikPlatNumber ||
+        !checkCombinationNikPlatNumber.rows ||
+        !checkCombinationNikPlatNumber.rows.length
+      ) {
+        error.code = 404;
+        error.messages = "Plate number and NIK combination not found";
+        throw error;
+      }
+
+      //mengambil data username user
+      const getUsername = await pool.query(
+        `SELECT username FROM samsat_dummy WHERE nik = '${data.nik}'`
+      );
+
       //fungsi untuk insert user ke database
       const insert_result = await pool.query(
-        `INSERT INTO parking_users (plat_number) VALUES ('${data.plat_number}') RETURNING *`
-      );
-      req.insert_result_register = insert_result.rows[0];
-
-      next();
-    } catch (err) {
-      await pool.query("ROLLBACK;");
-      res.status(409).send(err.message).end();
-    }
-  },
-  async (req, res) => {
-    try {
-      //fungsi untuk register user ke blockchain
-      await userRegister(
-        req.insert_result_register.user_id,
-        req.insert_result_register.plat_number
+        `INSERT INTO parking_users (plat_number, nik, username, phone_number) VALUES ('${data.plat_number}', '${data.nik}', '${getUsername.rows[0].username}', '${data.phone_number}') RETURNING *`
       );
 
+      // req.insert_result_register = insert_result.rows[0];
+
+      //commit di sini hanya ada ketika blockchainnya belum ada
       await pool.query("COMMIT;");
-      res.status(201).send("register berhasil").end();
+      // next();
+      res.status(201).json(insert_result.rows[0]).end();
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(409).send(err.message).end();
+      res.status(err.code).send(err.messages).end();
     }
   }
+  // async (req, res) => {
+  //   try {
+  //     //fungsi untuk register user ke blockchain
+  //     //TEST
+  //     // await userRegister(
+  //     //   req.insert_result_register.user_id,
+  //     //   req.insert_result_register.plat_number
+  //     // );
+
+  //     await pool.query("COMMIT;");
+  //     res.status(201).send("register berhasil").end();
+  //   } catch (err) {
+  //     await pool.query("ROLLBACK;");
+  //     res.status(409).send(err.message).end();
+  //   }
+  // }
 );
+
+//endpoint untuk login users ke website
+app.post("/login", async (req, res, next) => {
+  try {
+    const error = new Error();
+    const data = req.body;
+
+    //verifikasi apakah nomor telepon sudah terdaftar
+    const checkPhoneNumber = await pool.query(
+      `SELECT * FROM parking_users WHERE phone_number = '${data.phone_number}'`
+    );
+    if (!checkPhoneNumber.rows.length) {
+      error.code = 404;
+      error.messages = "User not found";
+      throw error;
+    }
+
+    //mengambil data user_id yang berkolerasi dengan phone numbe tersebut
+    //untuk data tersebut digunakan untuk visualisasi data di website
+    const getUserID = await pool.query(
+      `SELECT user_id FROM parking_users WHERE phone_number = '${data.phone_number}'`
+    );
+
+    res.status(200).json(getUserID.rows[0]).end();
+  } catch (err) {
+    res.status(err.code).send(err.messages).end();
+  }
+});
 
 //endpoint untuk login users
 //sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
@@ -275,29 +341,22 @@ app.post(
       if (req.mqttError) {
         throw req.mqttError;
       }
-      console.time("authenticateUser");
+
       //hasil return dari fungsi authenticateUserIn
       const authenticatedUser = await authenticateUserIn(data.plat_number);
 
-      //TEST
-      console.log("AUTHENTICATED USER", authenticatedUser);
-      console.log("apakah ini null?", authenticatedUser.user_id);
-      console.timeEnd("authenticateUser");
       //jika user tidak ditemukan
       if (authenticatedUser.user_id == undefined) {
         throw authenticatedUser;
       }
 
       //menandakan transaksi dimulai
-      console.time("queryInsert");
       await pool.query("BEGIN;");
 
       //insert data ke tabel orders_detail dengan time_enter = NOW()
       const insert_result = await pool.query(
         `INSERT INTO orders_detail (user_id, time_enter, status) VALUES ('${authenticatedUser.user_id}', NOW(), 'NOT PAID') RETURNING *`
       );
-
-      console.timeEnd("queryInsert");
 
       //menyimpan hasil data insert untuk selanjutnya digunakan di middleware selanjutnya
       req.insert_result_check_in = insert_result.rows[0];
@@ -327,33 +386,25 @@ app.post(
     let error = new Error();
     try {
       //mengubah waktu dengan format timestamp menjadi unix timestamp
-      console.time("configureTime");
       let date_when_check_in = new Date(req.insert_result_check_in.time_enter);
       let time_enter_unixTimeStamp = Math.floor(
         date_when_check_in.getTime() / 1000
       );
-      console.timeEnd("configureTime");
 
-      console.time("blockchainFunction1");
       // fungsi untuk mengirim data ke blockchain network
       const blockchainAddOrder = await addOrder(
         req.insert_result_check_in.user_id,
         req.insert_result_check_in.booking_id,
         time_enter_unixTimeStamp
       );
-      console.timeEnd("blockchainFunction1");
-
-      console.time("blockchainFunction2");
 
       if (blockchainAddOrder != "success") {
         error.code = 500;
         error.messages = "blockchain error";
         throw error;
       }
-      console.timeEnd("blockchainFunction2");
 
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      console.time("mqttFunc");
       const mqttClient = req.mqtt;
       mqttClient.publish(
         "backend/checkIn",
@@ -384,7 +435,6 @@ app.post(
         }
       );
 
-      console.timeEnd("mqttFunc");
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
     } catch (err) {
