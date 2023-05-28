@@ -5,10 +5,11 @@ const web3 = new Web3(
 );
 require("dotenv").config();
 
-// Please reset db before uncomment contract address below
-const contractAddress = "0x135478e1D69E177B2e0c653D995962F43F8EDF68";
-const accountAddress = process.env.ACCOUNT_ADDRESS;
+//reset db first
+// const contractAddress = "0x1f2218eE01A96A3d8530fe7D41C14D4F07Fa8358";
 const privateKey = process.env.PRIVATE_KEY;
+web3.eth.accounts.wallet.add(privateKey)
+const accountAddress = web3.eth.accounts.wallet[0].address
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -109,31 +110,9 @@ const insertExit = async (order_id, time_exit, price) => {
   }
 };
 
-const getUserOrderInfo1 = async (userId) => {
-  try {
-    const tx = {
-      from: accountAddress,
-      to: contractAddress,
-      gas: 150000,
-      data: contract.methods.getUserInfo(user_id).encodeABI(),
-    };
-    const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
-
-    await web3.eth
-      .sendSignedTransaction(signature.rawTransaction)
-      .on("receipt", async (receipt) => {
-        console.log(receipt.status);
-      });
-    return "success";
-  } catch (err) {
-    console.log(err.message);
-    return err;
-  }
-};
-
 const getUserOrderInfo = async (user_id) => {
   try {
-    const data = await contract.methods.getUserInfo(user_id).call();
+    const data = await contract.methods.getUserInfo(user_id).call({from: accountAddress});
     const newData = {
       user_id: parseInt(data.user_id),
       balance: parseInt(data.balance),
@@ -151,7 +130,7 @@ const getUserOrderInfo = async (user_id) => {
 
 const getOrderDetail = async (order_id) => {
   try {
-    const data = await contract.methods.getOrderDetail(order_id).call();
+    const data = await contract.methods.getOrderDetail(order_id).call({from: accountAddress});
     const newData = {
       user_id: parseInt(data.user_id),
       time_enter: parseInt(data.time_enter),
