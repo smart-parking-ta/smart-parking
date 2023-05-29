@@ -6,10 +6,10 @@ const web3 = new Web3(
 require("dotenv").config();
 
 //reset db first
-// const contractAddress = "0x1f2218eE01A96A3d8530fe7D41C14D4F07Fa8358";
+const contractAddress = "0x1f2218eE01A96A3d8530fe7D41C14D4F07Fa8358";
 const privateKey = process.env.PRIVATE_KEY;
-web3.eth.accounts.wallet.add(privateKey)
-const accountAddress = web3.eth.accounts.wallet[0].address
+web3.eth.accounts.wallet.add(privateKey);
+const accountAddress = web3.eth.accounts.wallet[0].address;
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
@@ -112,7 +112,9 @@ const insertExit = async (order_id, time_exit, price) => {
 
 const getUserOrderInfo = async (user_id) => {
   try {
-    const data = await contract.methods.getUserInfo(user_id).call({from: accountAddress});
+    const data = await contract.methods
+      .getUserInfo(user_id)
+      .call({ from: accountAddress });
     const newData = {
       user_id: parseInt(data.user_id),
       balance: parseInt(data.balance),
@@ -130,7 +132,9 @@ const getUserOrderInfo = async (user_id) => {
 
 const getOrderDetail = async (order_id) => {
   try {
-    const data = await contract.methods.getOrderDetail(order_id).call({from: accountAddress});
+    const data = await contract.methods
+      .getOrderDetail(order_id)
+      .call({ from: accountAddress });
     const newData = {
       user_id: parseInt(data.user_id),
       time_enter: parseInt(data.time_enter),

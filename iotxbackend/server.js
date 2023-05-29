@@ -44,6 +44,44 @@ app.get("/testErrorCode", (req, res) => {
   }
 });
 
+//endpoint untuk mendapatkan data user berdasarkan user_id di tabel parking_users;
+app.get("/getUserData/:user_id", async (req, res) => {
+  try {
+    const user_id = req.params.user_id;
+
+    const result = await pool.query(
+      `SELECT * FROM parking_users WHERE user_id = '${user_id}'`
+    );
+
+    if (!result || !result.rows || !result.rows.length) {
+      throw new Error("User not found");
+    }
+
+    res.status(200).json(result.rows[0]).end();
+  } catch (err) {
+    res.status(404).send(err.message).end();
+  }
+});
+
+//endpoint untuk mendapatkan orders_detail dari user berdasarkan user_id
+app.get("/getUserOrderDetail/:user_id", async (req, res) => {
+  try {
+    const user_id = req.params.user_id;
+
+    const result = await pool.query(
+      `SELECT * FROM orders_detail WHERE user_id = '${user_id}'`
+    );
+
+    if (!result || !result.rows || !result.rows.length) {
+      throw new Error("User not found");
+    }
+
+    res.status(200).json(result.rows).end();
+  } catch (err) {
+    res.status(404).send(err.message).end();
+  }
+});
+
 //fungsi untuk menjadikan segala number yang length < 2, ditambahkan 0 di depan angka tersebut
 function padTo2Digits(num) {
   return num.toString().padStart(2, "0");
@@ -445,7 +483,6 @@ app.post(
 );
 
 //endpoint untuk logout users
-//sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkOut",
   connectMqtt,
