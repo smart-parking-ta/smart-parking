@@ -1,7 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
-const cors = require('cors');
+const cors = require("cors");
 const {
   userRegister,
   topUpBalance,
@@ -371,16 +371,15 @@ app.post("/login", async (req, res, next) => {
 //sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkIn",
-  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
-    const mqttClient = req.mqtt;
+    // const mqttClient = req.mqtt;
     const data = req.body;
     let error = new Error();
     try {
-      if (req.mqttError) {
-        throw req.mqttError;
-      }
+      // if (req.mqttError) {
+      //   throw req.mqttError;
+      // }
 
       //hasil return dari fungsi authenticateUserIn
       const authenticatedUser = await authenticateUserIn(data.plat_number);
@@ -406,18 +405,18 @@ app.post(
       await pool.query("ROLLBACK;");
 
       //mengirim message error ke mqtt client, kode 503 adalah error connect ke mqtt broker
-      if (err.code !== 503) {
-        mqttClient.publish(
-          "esp32/oledIn",
-          `${err.code}`,
-          { qos: 1, retain: true },
-          (err) => {
-            if (err) {
-              console.log(err);
-            }
-          }
-        );
-      }
+      // if (err.code !== 503) {
+      //   mqttClient.publish(
+      //     "esp32/oledIn",
+      //     `${err.code}`,
+      //     { qos: 1, retain: true },
+      //     (err) => {
+      //       if (err) {
+      //         console.log(err);
+      //       }
+      //     }
+      //   );
+      // }
 
       res.status(err.code).send(err.messages).end();
     }
@@ -445,35 +444,35 @@ app.post(
       }
 
       // fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      const mqttClient = req.mqtt;
-      mqttClient.publish(
-        "backend/checkIn",
-        "OPEN",
-        { qos: 1, retain: true },
-        (err) => {
-          if (err) {
-            console.log(err);
-            error.code = 500;
-            error.messages = "mqtt error";
-            throw error;
-          }
-        }
-      );
+      // const mqttClient = req.mqtt;
+      // mqttClient.publish(
+      //   "backend/checkIn",
+      //   "OPEN",
+      //   { qos: 1, retain: true },
+      //   (err) => {
+      //     if (err) {
+      //       console.log(err);
+      //       error.code = 500;
+      //       error.messages = "mqtt error";
+      //       throw error;
+      //     }
+      //   }
+      // );
 
       //fungsi untuk mengirim data ke mqtt broker, khususnya untuk pemberian pesan di oled
-      mqttClient.publish(
-        "esp32/oledIn",
-        "201",
-        { qos: 1, retain: true },
-        (err) => {
-          if (err) {
-            console.log(err);
-            error.code = 500;
-            error.messages = "mqtt error";
-            throw error;
-          }
-        }
-      );
+      // mqttClient.publish(
+      //   "esp32/oledIn",
+      //   "201",
+      //   { qos: 1, retain: true },
+      //   (err) => {
+      //     if (err) {
+      //       console.log(err);
+      //       error.code = 500;
+      //       error.messages = "mqtt error";
+      //       throw error;
+      //     }
+      //   }
+      // );
 
       await pool.query("COMMIT;");
       res.status(201).send("check in berhasil").end();
@@ -485,20 +484,20 @@ app.post(
 );
 
 //endpoint untuk logout users
+//nanti balikin lagi middleware connectMqtt
 app.post(
   "/checkOut",
-  connectMqtt,
   async (req, res, next) => {
     //mengambil data dari request.body
-    const mqttClient = req.mqtt;
+    // const mqttClient = req.mqtt;
     const data = req.body;
 
     let error = new Error();
 
     try {
-      if (req.mqttError) {
-        throw req.mqttError;
-      }
+      // if (req.mqttError) {
+      //   throw req.mqttError;
+      // }
       //hasil return dari fungsi authenticateUserOut
       const authenticatedUser = await authenticateUserOut(data.plat_number);
 
@@ -532,18 +531,18 @@ app.post(
       await pool.query("ROLLBACK;");
 
       //mengirim message error ke mqtt client, kode 503 adalah error connect ke mqtt broker
-      if (err.code !== 503) {
-        mqttClient.publish(
-          "esp32/oledOut",
-          `${err.code}`,
-          { qos: 1, retain: true },
-          (err) => {
-            if (err) {
-              console.log(err);
-            }
-          }
-        );
-      }
+      // if (err.code !== 503) {
+      //   mqttClient.publish(
+      //     "esp32/oledOut",
+      //     `${err.code}`,
+      //     { qos: 1, retain: true },
+      //     (err) => {
+      //       if (err) {
+      //         console.log(err);
+      //       }
+      //     }
+      //   );
+      // }
 
       res.status(err.code).send(err.messages).end();
     }
@@ -570,35 +569,35 @@ app.post(
       }
 
       //fungsi untuk mengirim data ke mqtt broker sehingga gerbang bisa terbuka
-      const mqttClient = req.mqtt;
-      mqttClient.publish(
-        "backend/checkOut",
-        "OPEN",
-        { qos: 1, retain: true },
-        (err) => {
-          if (err) {
-            console.log(err);
-            error.code = 500;
-            error.messages = "mqtt error";
-            throw error;
-          }
-        }
-      );
+      // const mqttClient = req.mqtt;
+      // mqttClient.publish(
+      //   "backend/checkOut",
+      //   "OPEN",
+      //   { qos: 1, retain: true },
+      //   (err) => {
+      //     if (err) {
+      //       console.log(err);
+      //       error.code = 500;
+      //       error.messages = "mqtt error";
+      //       throw error;
+      //     }
+      //   }
+      // );
 
       //fungsi untuk mengirim data ke mqtt broker, khususnya untuk pemberian pesan di oled
-      mqttClient.publish(
-        "esp32/oledOut",
-        "201",
-        { qos: 1, retain: true },
-        (err) => {
-          if (err) {
-            console.log(err);
-            error.code = 500;
-            error.messages = "mqtt error";
-            throw error;
-          }
-        }
-      );
+      // mqttClient.publish(
+      //   "esp32/oledOut",
+      //   "201",
+      //   { qos: 1, retain: true },
+      //   (err) => {
+      //     if (err) {
+      //       console.log(err);
+      //       error.code = 500;
+      //       error.messages = "mqtt error";
+      //       throw error;
+      //     }
+      //   }
+      // );
 
       await pool.query("COMMIT;");
       res.status(201).send("check-out berhasil");
