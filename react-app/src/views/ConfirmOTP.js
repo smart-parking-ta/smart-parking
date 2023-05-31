@@ -14,6 +14,7 @@ function ConfirmOTP(){
       const user = result.user;
       console.log(user)
       navigate('/dashboard');
+      window.location.reload()
       // ...
     }).catch((error) => {
       // User couldn't sign in (bad verification code?)

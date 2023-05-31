@@ -5,6 +5,7 @@ import { getUserData } from '../components/connectBE'
 function Dashboard(){
     const [plateNumber, setPlateNumber] = useState('')
     const [balance, setBalance] = useState()
+    const [name, setName] = useState('')
     const navigate = useNavigate()
 
     function logout(){
@@ -16,6 +17,7 @@ function Dashboard(){
         const userData = await getUserData(id)
         setPlateNumber(userData.plat_number)
         setBalance(userData.balance)
+        setName(userData.username)
         return userData
     }
     
@@ -34,6 +36,9 @@ function Dashboard(){
     return(
         <div class="w-full">
             <div class="container px-5 py-24 mx-auto flex flex-wrap w-full">
+            <label class="block text-white text-xl font-bold mb-2">
+              {name}
+            </label>
             <div className='flex justify-end w-full space-x-4 '>
                 <button onClick={()=>navigate('/e-ticket')} className='bg-[#445263] hover:bg-blue-200 hover:text-gray-700 text-white font-medium py-3 px-16 text-xs rounded-full focus:outline-none focus:shadow-outline'>E-Ticket</button>
                 <button onClick={()=>logout()} className='bg-[#445263] hover:bg-blue-200 hover:text-gray-700 text-white font-medium py-3 px-16 text-xs rounded-full focus:outline-none focus:shadow-outline'>Log Out</button>
