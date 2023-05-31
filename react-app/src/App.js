@@ -8,18 +8,21 @@ import Dashboard from './views/Dashboard';
 import TopUpBalance from './views/TopUpBalance';
 import TopUpSuccess from './views/TopUpSuccess';
 import ETicket from './views/E-ticket';
+import { useNavigate } from 'react-router-dom';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBcC2oysbO8tJGsQtE57OyLDQclcJMYWxs",
+  authDomain: "fitdesign-18dfb.firebaseapp.com",
+  databaseURL: "https://fitdesign-18dfb-default-rtdb.firebaseio.com",
+  projectId: "fitdesign-18dfb",
+  storageBucket: "fitdesign-18dfb.appspot.com",
+  messagingSenderId: "813772686232",
+  appId: "1:813772686232:web:986b163c52fd68aa6b21ed"
+};
 
 function App() {
-  const firebaseConfig = {
-    apiKey: "AIzaSyBcC2oysbO8tJGsQtE57OyLDQclcJMYWxs",
-    authDomain: "fitdesign-18dfb.firebaseapp.com",
-    databaseURL: "https://fitdesign-18dfb-default-rtdb.firebaseio.com",
-    projectId: "fitdesign-18dfb",
-    storageBucket: "fitdesign-18dfb.appspot.com",
-    messagingSenderId: "813772686232",
-    appId: "1:813772686232:web:986b163c52fd68aa6b21ed"
-  };
-  
+
+
   // Initialize Firebase
   initializeApp(firebaseConfig);
 

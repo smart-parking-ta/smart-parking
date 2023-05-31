@@ -1,6 +1,7 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const { pool } = require("./connectDB");
+const cors = require('cors');
 const {
   userRegister,
   topUpBalance,
@@ -16,6 +17,7 @@ const app = express();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+app.use(cors());
 
 //endpoint buat tes bisa terhubung ke database atau tidak
 // app.get("/", async (req, res) => {

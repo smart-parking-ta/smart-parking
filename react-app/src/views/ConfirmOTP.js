@@ -1,17 +1,35 @@
 import { useState } from "react";
-import { otpConfirmation } from "../components/OTP";
+// import { otpConfirmation } from "../components/OTP";
 import { useNavigate } from 'react-router-dom'
 
 function ConfirmOTP(){
   const navigate = useNavigate() 
   const [OTPCode, setOTPCode] = useState()
 
-    function onConfirmSubmit(e){
+  async function otpConfirmation(code){
+    console.log('code', code)
+    await window.confirmationResult.confirm(code)
+    .then((result) => {
+      // User signed in successfully.
+      const user = result.user;
+      console.log(user)
+      navigate('/dashboard');
+      // ...
+    }).catch((error) => {
+      // User couldn't sign in (bad verification code?)
+      // ...
+      console.log(error)
+      alert('OTP false')
+    });
+}
+
+    async function onConfirmSubmit(e){
       e.preventDefault();
       console.log(OTPCode)
-      otpConfirmation(OTPCode);
-      alert('Success confirm');
-      navigate('/dashboard');
+      const a = await otpConfirmation(OTPCode)
+      console.log(a)
+      // navigate('/dashboard');
+      // alert('OTP false')
     }
 
     return(

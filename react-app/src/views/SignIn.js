@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { sendOTP } from "../components/OTP";
 import { useNavigate } from 'react-router-dom'
+import { login } from "../components/connectBE";
+import { sendOTP } from "../components/OTP";
 
 function SignIn(){
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -9,8 +10,15 @@ function SignIn(){
   async function onSignInSubmit(e){
     e.preventDefault();
     console.log("button clicked")
-    await sendOTP(phoneNumber);
-    navigate('/confirm-otp');
+    // await getlogin()
+    const isCorrectAuth = await login(phoneNumber)
+    if (isCorrectAuth){
+      await sendOTP('+'+phoneNumber);
+      navigate('/confirm-otp');
+    }
+    else {
+      alert('Not registered phone number')
+    }
   }
 
     return(
@@ -20,7 +28,7 @@ function SignIn(){
             <label class="block text-gray-700 text-xs font-bold mb-2" for="password">
     Nomor Hp
   </label>
-  <input onChange={(e)=>setPhoneNumber(e.target.value)} type="tel" class="shadow appearance-none border rounded-full py-3 px-2 font-medium text-gray-700 text-xs leading-tight focus:outline-none focus:shadow-outline" id="password" placeholder="Masukkan No. Hp +62.."/>
+  <input value={phoneNumber} onChange={(e)=>setPhoneNumber(e.target.value.slice(0,14))} type="number" class="shadow appearance-none border rounded-full py-3 px-2 font-medium text-gray-700 text-xs leading-tight focus:outline-none focus:shadow-outline" placeholder="Masukkan No. Hp 62.."/>
             </div>
             <div class="flex items-center justify-center">
               <button id='sign-in-button' class="bg-[#445263] hover:bg-blue-200 hover:text-gray-700 text-white font-medium py-3 px-16 text-xs rounded-full focus:outline-none focus:shadow-outline">

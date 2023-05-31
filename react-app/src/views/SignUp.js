@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { sendOTP } from "../components/OTP";
 import { useNavigate } from 'react-router-dom'
 
 function SignUp(){
 
   const [phoneNumber, setPhoneNumber] = useState('');
-  const navigate = useNavigate() 
+  const navigate = useNavigate();
+
+  useEffect(()=>{
+    const b = localStorage.getItem('user_id')
+    console.log("b", b)
+  
+    if (b != null){
+      navigate('/dashboard')
+    }
+  },[])
 
   async function onSignUpSubmit(e){
     e.preventDefault();
