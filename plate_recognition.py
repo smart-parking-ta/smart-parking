@@ -192,25 +192,24 @@ def save_plate_in_csv(last_plate, get_plate, time_in):
             # time.sleep(2)
 
 
-        # status_code, response_text = push_data_in_api(last_plate, get_plate)
+        status_code, response_text = push_data_in_api(last_plate, get_plate)
+
+        while status_code == 503:
+            print("Error pushing data to API. Retrying in 2 seconds...")
+            time.sleep(2)
+            status_code, response_text = push_data_in_api(last_plate, get_plate)
 
         with open('vehicle_in.csv', 'r') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
 
 
-        # for row in rows:
-        #     if row['plate_number'] == get_plate:
-        #         row['status'] = 1 if status_code == 201 else 0
-        #         row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+        for row in rows:
+            if row['plate_number'] == get_plate:
+                row['status'] = 1 if status_code == 201 else 0
+                row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
 
-        
-        # while status_code == 404 or status_code == 503:
-        #     print("Error pushing data to API. Retrying in 2 seconds...")
-        #     time.sleep(2)
-        #     status_code, response_text = push_data_in_api(last_plate, get_plate)
-
-                
+        time.sleep(2)
 
         with open('vehicle_in.csv', 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
@@ -243,8 +242,8 @@ def get_last_plate_in():
 import requests
 def push_data_in_api(last_plate, get_plate):
     print("Pushing data to API:", get_plate)
-    api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkIn"
-    
+    # api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkIn"
+    api_url = "http://127.0.0.1:8080/checkIn"    
     # api_url = "http://192.168.43.213:8080/checkIn"
 
 
@@ -276,16 +275,9 @@ def push_data_in_api(last_plate, get_plate):
 
 #---------------------------------------------
 
-
-
-
-
-
-
 def match_plate_out(get_plate, time_out):
     if get_plate is None:
         return
-
     else:
         with open('vehicle_in.csv', 'r') as f_in:
             reader_in = csv.reader(f_in)
@@ -298,6 +290,8 @@ def match_plate_out(get_plate, time_out):
             writer_out = csv.writer(f_out)
             for row in updated_rows:
                 writer_out.writerow(row)
+
+        time_in = None  # Initialize time_in with a default value
 
         with open('vehicle_out.csv', 'r') as f_out_r:
             for row in rows:
@@ -324,27 +318,96 @@ def match_plate_out(get_plate, time_out):
                 w = csv.DictWriter(f, plate_dict.keys())
                 w.writerow(plate_dict)
 
-            # status_code, response_text = push_data_out_api(get_plate)
+            status_code, response_text = push_data_out_api(get_plate)
 
-            # while status_code == 404 or status_code == 503:
-            #     print("Error pushing data to API. Retrying in 2 seconds...")
-            #     time.sleep(2)
-            #     status_code, response_text = push_data_out_api(get_plate)
+            while status_code == 503:
+                print("Error pushing data to API. Retrying in 2 seconds...")
+                time.sleep(2)
+                status_code, response_text = push_data_out_api(get_plate)
 
             with open('vehicle_out.csv', 'r') as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
 
-            # for row in rows:
-            #     if row['plate_number'] == get_plate:
-            #         row['status'] = 1 if status_code == 202 else 0
-            #         row['response_text'] = "success" if status_code == 202 else "unauth" if status_code == 401 else "error" if status_code == 404 else ""
-            #         row['time_out'] = time_out  
+            for row in rows:
+                if row['plate_number'] == get_plate:
+                    row['status'] = 1 if status_code == 201 else 0
+                    row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+                    row['time_out'] = time_out  
 
             with open('vehicle_out.csv', 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
                 writer.writeheader()
                 writer.writerows(rows)
+
+
+
+
+
+
+# def match_plate_out(get_plate, time_out):
+#     if get_plate is None:
+#         return
+
+#     else:
+#         with open('vehicle_in.csv', 'r') as f_in:
+#             reader_in = csv.reader(f_in)
+#             rows = list(reader_in)
+        
+#         # Remove the matched plate from the list of rows
+#         updated_rows = [row for row in rows if row and row[0] != get_plate]
+        
+#         with open('vehicle_in.csv', 'w', newline='') as f_out:
+#             writer_out = csv.writer(f_out)
+#             for row in updated_rows:
+#                 writer_out.writerow(row)
+
+#         with open('vehicle_out.csv', 'r') as f_out_r:
+#             for row in rows:
+#                 if row and row[0] == get_plate:
+#                     time_in = row[1]
+#                     print(time_in)
+#             reader_out_r = csv.reader(f_out_r)
+#             plate_dict = {
+#                 "plate_number": get_plate,
+#                 "time_in": time_in,
+#                 "time_out": time_out,
+#                 "status": 0,
+#                 "response_text": None
+#             }
+            
+#             with open('vehicle_in.csv', 'r') as f_in:
+#                 reader_in = csv.reader(f_in)
+#                 for row in reader_in:
+#                     if row and row[0] == get_plate:
+#                         plate_dict['time_in'] = row[1]
+#                         break
+
+#             with open('vehicle_out.csv', 'a', newline='') as f:
+#                 w = csv.DictWriter(f, plate_dict.keys())
+#                 w.writerow(plate_dict)
+
+#             status_code, response_text = push_data_out_api(get_plate)
+
+#             while status_code == 503:
+#                 print("Error pushing data to API. Retrying in 2 seconds...")
+#                 time.sleep(2)
+#                 status_code, response_text = push_data_out_api(get_plate)
+
+#             with open('vehicle_out.csv', 'r') as f:
+#                 reader = csv.DictReader(f)
+#                 rows = list(reader)
+
+#             for row in rows:
+#                 if row['plate_number'] == get_plate:
+#                     row['status'] = 1 if status_code == 201 else 0
+#                     row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+#                     row['time_out'] = time_out  
+
+#             with open('vehicle_out.csv', 'w', newline='') as f:
+#                 writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
+#                 writer.writeheader()
+#                 writer.writerows(rows)
 
 
 
@@ -368,8 +431,8 @@ def get_last_plate_out():
 def push_data_out_api(get_plate):
     print("Pushing data to API:", get_plate)
 
-    api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkOut"
-    # api_url = "http://192.168.43.213:8080/checkOut"
+    # api_url = "https://smart-parking-api-izqxjuid2a-et.a.run.app/checkOut"
+    api_url = "http://127.0.0.1:8080/checkOut"
 
     headers = {
         "Content-Type": "application/json"
@@ -414,31 +477,26 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
 
         
-        # print(f"Inference Time: {inference_time} seconds")
-
-        
 
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
-        last_plate = get_last_plate_in()
-        # PUSH DATA TO API FOR PLATE IN
-        if get_plate is not None: # check if detected plate number is different from the last plate number
-            # push_data_in_api(last_plate, get_plate) # push data to API
-            save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
-            last_plate = get_plate # update the last plate number with the newly detected one
-
-            # retry_push_in()
+        # last_plate = get_last_plate_in()
+        # # PUSH DATA TO API FOR PLATE IN
+        # if get_plate is not None:
+        #     # push_data_in_api(last_plate, get_plate) # push data to API
+        #     save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
+        #     last_plate = get_plate 
 
 
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
-        # time_out = time_exit(image, boxes_np[i])
-        # last_plate_out = get_last_plate_out()
-        # # PUSH DATA TO API FOR PLATE OUT
-        # if get_plate is not None:
-        #     save_plate_out = match_plate_out(get_plate, time_out)
-        #     # push_data_out_api(last_plate_out, get_plate)
-        #     last_plate_out = get_plate
+        time_out = time_exit(image, boxes_np[i])
+        last_plate_out = get_last_plate_out()
+        # PUSH DATA TO API FOR PLATE OUT
+        if get_plate is not None:
+            save_plate_out = match_plate_out(get_plate, time_out)
+            # push_data_out_api(last_plate_out, get_plate)
+            last_plate_out = get_plate
         
         # ------------------------------------------------------------------------------------------------------
 
