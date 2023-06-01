@@ -47,14 +47,14 @@ app.get("/testErrorCode", (req, res) => {
 });
 
 //endpoint untuk menangkap price dari order booking
-app.get("/getTagihanCheckOut/:book_id", async (req, res) => {
+app.get("/getTagihanCheckOut/:user_id", async (req, res) => {
   try {
     let error = new Error();
     let tagihanCheckOut;
-    const book_id = req.params.book_id;
+    const user_id = req.params.user_id;
 
     const result = await pool.query(
-      `SELECT * FROM orders_detail WHERE booking_id = '${book_id}'`
+      `SELECT * FROM orders_detail WHERE user_id = '${user_id}' ORDER BY booking_id DESC LIMIT 1`
     );
 
     if (!result || !result.rows || !result.rows.length) {
@@ -69,7 +69,7 @@ app.get("/getTagihanCheckOut/:book_id", async (req, res) => {
       tagihanCheckOut = result.rows[0].price;
     }
 
-    res.send(200).json(tagihanCheckOut).end();
+    res.status(200).json(tagihanCheckOut).end();
   } catch (err) {
     console.log(err);
     res.status(err.code).send(err.messages).end();
