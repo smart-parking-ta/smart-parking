@@ -58,9 +58,8 @@ app.get("/getTagihanCheckOut/:user_id", async (req, res) => {
     );
 
     if (!result || !result.rows || !result.rows.length) {
-      error.code = 404;
-      error.messages = "User not found";
-      throw error;
+      tagihanCheckOut = 0;
+      res.status(200).json(tagihanCheckOut).end();
     }
 
     if (result.rows[0].status == "PAID") {
