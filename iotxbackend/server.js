@@ -46,6 +46,7 @@ app.get("/testErrorCode", (req, res) => {
   }
 });
 
+//endpoint untuk menangkap price dari order booking
 app.get("/getTagihanCheckOut/:book_id", async (req, res) => {
   try {
     let error = new Error();
@@ -74,7 +75,6 @@ app.get("/getTagihanCheckOut/:book_id", async (req, res) => {
     res.status(err.code).send(err.messages).end();
   }
 });
-
 //endpoint untuk mendapatkan data user berdasarkan user_id di tabel parking_users;
 app.get("/getUserData/:user_id", async (req, res) => {
   try {
