@@ -6,7 +6,7 @@ const web3 = new Web3(
 require("dotenv").config();
 
 //reset db first
-// const contractAddress = "0xaE6dff3418954DBCeeb8680540604972241a0cE9";
+// const contractAddress = "0x8f8ce02ad3D9D2f3C49f37627c8c189E213Ebe15";
 const privateKey = process.env.PRIVATE_KEY;
 web3.eth.accounts.wallet.add(privateKey);
 const accountAddress = web3.eth.accounts.wallet[0].address;
@@ -119,6 +119,9 @@ const getUserOrderInfo = async (user_id) => {
       user_id: parseInt(data.user_id),
       balance: parseInt(data.balance),
       plate_number: data.plate_number,
+      nik: data.nik,
+      username: data.username,
+      phone_number: data.phone_number,
       order_list: data.order_id.map(function (str) {
         return parseInt(str);
       }),
