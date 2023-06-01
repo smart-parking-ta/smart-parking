@@ -15,8 +15,12 @@ INPUT_HEIGHT = 640
 
 
 pt.pytesseract.tesseract_cmd = r'C:/Users/ACER/AppData/Local/Tesseract-OCR/tesseract.exe'
+# C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/.env/Lib/site-packages/pytesseract/pytesseract
 
-net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH\CODE/TA/TA-PLATE-RECOG/Epoch600/yolov5/runs/train/exp/weights/best.onnx')
+# net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH\CODE/TA/TA-PLATE-RECOG/Epoch600/yolov5/runs/train/exp/weights/best.onnx')
+
+net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/yolomodel/1.3000-512/yolov5/runs/train/exp/weights/best.onnx')
+
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
@@ -188,23 +192,23 @@ def save_plate_in_csv(last_plate, get_plate, time_in):
             # time.sleep(2)
 
 
-        status_code, response_text = push_data_in_api(last_plate, get_plate)
+        # status_code, response_text = push_data_in_api(last_plate, get_plate)
 
         with open('vehicle_in.csv', 'r') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
 
 
-        for row in rows:
-            if row['plate_number'] == get_plate:
-                row['status'] = 1 if status_code == 201 else 0
-                row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+        # for row in rows:
+        #     if row['plate_number'] == get_plate:
+        #         row['status'] = 1 if status_code == 201 else 0
+        #         row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
 
         
-        while status_code == 404 or status_code == 503:
-            print("Error pushing data to API. Retrying in 2 seconds...")
-            time.sleep(2)
-            status_code, response_text = push_data_in_api(last_plate, get_plate)
+        # while status_code == 404 or status_code == 503:
+        #     print("Error pushing data to API. Retrying in 2 seconds...")
+        #     time.sleep(2)
+        #     status_code, response_text = push_data_in_api(last_plate, get_plate)
 
                 
 
@@ -263,117 +267,16 @@ def push_data_in_api(last_plate, get_plate):
         response = requests.post(api_url, json=payload, headers=headers)
         print(response.status_code)
         print(response.text)
-        time.sleep(2)
+        # time.sleep(2)
         return response.status_code, response.text    
         
 
-
-
-# def retry_push_in():
-#     with open('vehicle_in.csv', 'r') as f:
-#         reader = csv.DictReader(f)
-#         rows = list(reader)
-    
-#     for plate in rows:
-#         if plate['status'] == '1' and plate['response_text'] == 'error':
-#             print("retrying push data to API:", plate['plate_number'])
-#             # status_code, response_text = push_data_in_api(last_plate=None, get_plate=plate['plate_number'])
-            
-#             # Check the response from the API
-#             # if status_code == 200:
-#             #     
-#             #     plate['status'] = '1'
-#             #     print("Data pushed successfully!")
-#             # else:
-#             #     print("Failed to push data:", response_text)
-            
-#             # time.sleep(2)
         
 
 
 #---------------------------------------------
 
 
-
-
-# def match_plate_out(get_plate, time_out):
-#     if get_plate is None:
-#         return
-
-#     else:
-#         with open('vehicle_in.csv', 'r') as f_in:
-#             reader_in = csv.reader(f_in)
-#             for row in reader_in:
-#                 if row and row[0] == get_plate:
-
-#                     with open('vehicle_out.csv', 'r') as f_out_r:
-#                         reader_out_r = csv.reader(f_out_r)
-#                         plate_dict = {
-#                                     "plate_number": get_plate,
-#                                     "time_in": row[1],
-#                                     "time_out": time_out,
-#                                     "status": 0,
-#                                     "response_text": None
-#                                 }
-#                         # print(plate_dict)
-                    
-#                         with open('vehicle_out.csv', 'a', newline='') as f:
-#                             w = csv.DictWriter(f, plate_dict.keys())
-#                             w.writerow(plate_dict)
-
-
-#                         status_code, response_text = push_data_out_api(get_plate)
-
-
-#                         while status_code == 404 or status_code == 503:
-#                             print("Error pushing data to API. Retrying in 2 seconds...")
-#                             time.sleep(2)
-#                             status_code, response_text = push_data_out_api(get_plate)
-
-#                         with open('vehicle_out.csv', 'r') as f:
-#                                 reader = csv.DictReader(f)
-#                                 rows = list(reader)
-
-#                         for row in rows:
-#                             if row['plate_number'] == get_plate:
-#                                 row['status'] = 1 if status_code == 202 else 0
-#                                 row['response_text'] = "success" if status_code == 202 else "unauth" if status_code == 401 else "error" if status_code == 404 else ""
-                                    
-
-#                         with open('vehicle_out.csv', 'w', newline='') as f:
-#                             writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
-#                             writer.writeheader()
-#                             writer.writerows(rows)
-
-#                        
-#                         temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-#                         temp_file_path = temp_file.name
-
-#                         with open('vehicle_in.csv', 'r') as f_in2:
-#                             reader_in2 = csv.reader(f_in2)
-#                             writer = csv.writer(temp_file)
-#                             for row in reader_in2:
-#                                 if row and row[0] != get_plate:
-#                                     writer.writerow(row)
-#                         temp_file.close()
-
-#                         # Replace original file with temporary file
-#                         shutil.move(temp_file_path, 'vehicle_in.csv')
-
-#                         # Remove the matched plate from vehicle_in.csv
-#                         # temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
-#                         # temp_file_path = temp_file.name
-                        
-
-#                     # with open('vehicle_in.csv', 'w') as f_in:
-#                     #     writer_in = csv.writer(f_in)
-#                     #     rows_in = list(reader_in)
-#                     #     for row_in_2 in rows_in:
-#                     #         if row_in_2 and row_in_2[0] != get_plate:
-#                     #             writer_in.writerow(row_in_2)
-
-#                    
-#                     # shutil.move(temp_file_path, 'vehicle_in.csv')
 
 
 
@@ -421,22 +324,22 @@ def match_plate_out(get_plate, time_out):
                 w = csv.DictWriter(f, plate_dict.keys())
                 w.writerow(plate_dict)
 
-            status_code, response_text = push_data_out_api(get_plate)
+            # status_code, response_text = push_data_out_api(get_plate)
 
-            while status_code == 404 or status_code == 503:
-                print("Error pushing data to API. Retrying in 2 seconds...")
-                time.sleep(2)
-                status_code, response_text = push_data_out_api(get_plate)
+            # while status_code == 404 or status_code == 503:
+            #     print("Error pushing data to API. Retrying in 2 seconds...")
+            #     time.sleep(2)
+            #     status_code, response_text = push_data_out_api(get_plate)
 
             with open('vehicle_out.csv', 'r') as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
 
-            for row in rows:
-                if row['plate_number'] == get_plate:
-                    row['status'] = 1 if status_code == 202 else 0
-                    row['response_text'] = "success" if status_code == 202 else "unauth" if status_code == 401 else "error" if status_code == 404 else ""
-                    row['time_out'] = time_out  
+            # for row in rows:
+            #     if row['plate_number'] == get_plate:
+            #         row['status'] = 1 if status_code == 202 else 0
+            #         row['response_text'] = "success" if status_code == 202 else "unauth" if status_code == 401 else "error" if status_code == 404 else ""
+            #         row['time_out'] = time_out  
 
             with open('vehicle_out.csv', 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
@@ -479,11 +382,14 @@ def push_data_out_api(get_plate):
     response = requests.post(api_url, json=payload, headers=headers)
     print(response.status_code)
     print(response.text)
-    time.sleep(2)
+    # time.sleep(2)
     return response.status_code, response.text
 
 
-
+def save_inference_time(inference_time):
+    with open('inference_times.csv', 'a', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow([inference_time])
 
 
 
@@ -492,13 +398,23 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         box = boxes_np[i]
 
         ss_object = screenshot_object(image, index, boxes_np[i], confidences_np)
+
+        start_time = time.time()
+
         time_in = time_enter(image, boxes_np[i])
         get_plate = get_plate_number(ss_object)
+
+        end_time = time.time()
+        inference_time = end_time - start_time
+        save_inference_time(inference_time)
         
         x1,y1,w,h = box.astype('int')
         cv2.rectangle(image,(x1,y1),(x1+w,y1+h),(255,0,0),2)
         cv2.putText(image, f'{confidences_np[i]:.2f}', (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
         # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
+
+        
+        # print(f"Inference Time: {inference_time} seconds")
 
         
 
