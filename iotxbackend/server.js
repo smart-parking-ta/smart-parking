@@ -137,7 +137,7 @@ app.post("/retrieveBlockchain", async (req, res) => {
 
       //insert parking_user ke database
       await pool.query(
-        `INSERT INTO parking_users (user_id, plat_number, balance) VALUES ('${parking_user.user_id}','${parking_user.plate_number}', '${parking_user.balance}') RETURNING *`
+        `INSERT INTO parking_users (user_id, plat_number, balance, nik, username, phone_number) VALUES ('${parking_user.user_id}','${parking_user.plate_number}', '${parking_user.balance}', '${parking_user.nik}', '${parking_user.username}', '${parking__user.phone_number}') RETURNING *`
       );
 
       //dari tiap user, dilooping lagi dari order_list
@@ -339,7 +339,7 @@ app.post(
         `INSERT INTO parking_users (plat_number, nik, username, phone_number) VALUES ('${data.plat_number}', '${data.nik}', '${getUsername.rows[0].username}', '${data.phone_number}') RETURNING *`
       );
 
-      // req.insert_result_register = insert_result.rows[0];
+      req.insert_result_register = insert_result.rows[0];
 
       //commit di sini hanya ada ketika blockchainnya belum ada
       await pool.query("COMMIT;");
@@ -349,23 +349,26 @@ app.post(
       await pool.query("ROLLBACK;");
       res.status(err.code).send(err.messages).end();
     }
-  }
-  // async (req, res) => {
-  //   try {
-  //     //fungsi untuk register user ke blockchain
-  //     //TEST
-  //     // await userRegister(
-  //     //   req.insert_result_register.user_id,
-  //     //   req.insert_result_register.plat_number
-  //     // );
+  },
+  async (req, res) => {
+    try {
+      //fungsi untuk register user ke blockchain
 
-  //     await pool.query("COMMIT;");
-  //     res.status(201).send("register berhasil").end();
-  //   } catch (err) {
-  //     await pool.query("ROLLBACK;");
-  //     res.status(409).send(err.message).end();
-  //   }
-  // }
+      await userRegister(
+        req.insert_result_register.user_id,
+        req.insert_result_register.plat_number,
+        req.insert_result_register.nik,
+        req.insert_result_register.username,
+        req.insert_result_register.phone_number
+      );
+
+      await pool.query("COMMIT;");
+      res.status(201).send("register berhasil").end();
+    } catch (err) {
+      await pool.query("ROLLBACK;");
+      res.status(409).send(err.message).end();
+    }
+  }
 );
 
 //endpoint untuk login users ke website
