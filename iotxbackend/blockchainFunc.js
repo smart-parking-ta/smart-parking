@@ -13,13 +13,21 @@ const accountAddress = web3.eth.accounts.wallet[0].address;
 
 const contract = new web3.eth.Contract(abi, contractAddress);
 
-const userRegister = async (user_id, plat_number) => {
+const userRegister = async (
+  user_id,
+  plat_number,
+  nik,
+  username,
+  phone_number
+) => {
   try {
     const tx = {
       from: accountAddress,
       to: contractAddress,
       gas: 150000,
-      data: contract.methods.userRegister(user_id, plat_number).encodeABI(),
+      data: contract.methods
+        .userRegister(user_id, plat_number, nik, username, phone_number)
+        .encodeABI(),
     };
 
     const signature = await web3.eth.accounts.signTransaction(tx, privateKey);
