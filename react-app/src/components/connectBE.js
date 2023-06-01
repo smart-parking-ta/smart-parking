@@ -30,6 +30,13 @@ export async function getUserOrderDetail(id) {
   return response.data;
 }
 
+export async function getTagihanCheckOut(id) {
+  const response = await axios.get(domain + "/getTagihanCheckOut/" + id);
+
+  console.log("tagihan", response.data);
+  return response.data;
+}
+
 export async function register(plat_number, nik, phone_number) {
   try {
     const response = await axios.post(domain + "/register", {

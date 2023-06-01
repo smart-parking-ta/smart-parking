@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getUserData } from "../components/connectBE";
+import { getUserData, getTagihanCheckOut } from "../components/connectBE";
 
 function Dashboard() {
   const [plateNumber, setPlateNumber] = useState("");
   const [balance, setBalance] = useState();
   const [name, setName] = useState("");
+  const [tagihan, setTagihan] = useState();
   const navigate = useNavigate();
 
   function logout() {
@@ -15,6 +16,9 @@ function Dashboard() {
 
   async function userData(id) {
     const userData = await getUserData(id);
+    const c = await getTagihanCheckOut(id);
+    console.log("c", c);
+    setTagihan(c);
     setPlateNumber(userData.plat_number);
     setBalance(userData.balance);
     setName(userData.username);
@@ -76,7 +80,7 @@ function Dashboard() {
         <div class="flex p-4 w-full justify-center">
           <div class="max-w-sm p-10 bg-gradient-to-r g-gradient-to-b from-teal-200 to-blue-50 border border-gray-200 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700">
             <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900">
-              Rp6.000
+              Rp{tagihan}
             </h5>
             <p class="text-xs font-bold text-gray-700 dark:text-gray-400">
               Need to Pay
