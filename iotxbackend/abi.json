@@ -79,6 +79,21 @@
         "internalType": "string",
         "name": "_plate_number",
         "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_nik",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_username",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "_phone_number",
+        "type": "string"
       }
     ],
     "name": "userRegister",
@@ -161,6 +176,21 @@
       {
         "internalType": "string",
         "name": "plate_number",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "nik",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "username",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "phone_number",
         "type": "string"
       },
       {
