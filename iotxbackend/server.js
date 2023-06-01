@@ -341,10 +341,7 @@ app.post(
 
       req.insert_result_register = insert_result.rows[0];
 
-      //commit di sini hanya ada ketika blockchainnya belum ada
-      await pool.query("COMMIT;");
-      // next();
-      res.status(201).json(insert_result.rows[0]).end();
+      next();
     } catch (err) {
       await pool.query("ROLLBACK;");
       res.status(err.code).send(err.messages).end();
@@ -354,7 +351,7 @@ app.post(
     try {
       //fungsi untuk register user ke blockchain
 
-      await userRegister(
+      const blockchainFuncRegister = await userRegister(
         req.insert_result_register.user_id,
         req.insert_result_register.plat_number,
         req.insert_result_register.nik,
@@ -362,11 +359,18 @@ app.post(
         req.insert_result_register.phone_number
       );
 
+      if (blockchainFuncRegister != "success") {
+        let error = new Error();
+        error.code = 500;
+        error.messages = "Blockchain Error";
+        throw error;
+      }
+
       await pool.query("COMMIT;");
-      res.status(201).send("register berhasil").end();
+      res.status(201).send(req.insert_result_register).end();
     } catch (err) {
       await pool.query("ROLLBACK;");
-      res.status(409).send(err.message).end();
+      res.status(err.code).send(err.messages).end();
     }
   }
 );
