@@ -40,6 +40,8 @@ contract SmartParking {
 
   function getOrderDetail(uint256 _order_id) public onlyAdmin view returns (
     uint256 user_id, uint256 time_enter, uint256 time_exit, uint256 price, Status status){
+      require(time_enter != 0, "not check in yet");
+      require(time_exit != 0, "not check out yet");
       return (orders[_order_id].user_id, orders[_order_id].time_enter, orders[_order_id].time_exit, orders[_order_id].price, orders[_order_id].status);
   }
 
