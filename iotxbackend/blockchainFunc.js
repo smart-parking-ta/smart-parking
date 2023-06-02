@@ -6,7 +6,7 @@ const web3 = new Web3(
 require("dotenv").config();
 
 //reset db first
-// const contractAddress = "0xE9487b3962b6658DffDCE7ef46EC4ed83Fc70EB8";
+// const contractAddress = "0xA9312e15E518eD35E8Ff4Eba26D4B2B3b740322b";
 const privateKey = process.env.PRIVATE_KEY;
 web3.eth.accounts.wallet.add(privateKey);
 const accountAddress = web3.eth.accounts.wallet[0].address;
