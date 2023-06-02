@@ -80,14 +80,15 @@ contract SmartParking {
             Status status
         )
     {
-        require(time_enter != 0, "not check in yet");
-        require(time_exit != 0, "not check out yet");
+        Order storage order = orders[_order_id];
+        require(order.time_enter != 0, "not check in yet");
+        require(order.time_exit != 0, "not check out yet");
         return (
-            orders[_order_id].user_id,
-            orders[_order_id].time_enter,
-            orders[_order_id].time_exit,
-            orders[_order_id].price,
-            orders[_order_id].status
+            order.user_id,
+            order.time_enter,
+            order.time_exit,
+            order.price,
+            order.status
         );
     }
 
