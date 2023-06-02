@@ -128,36 +128,34 @@ app.post("/retrieveBlockchain", async (req, res) => {
     await pool.query(`TRUNCATE TABLE parking_users CASCADE`);
 
     //variable yang merepresentasikan id user
-    let user_id = 2;
+    let user_id = 1;
 
     let parking_user = await getUserOrderInfo(user_id);
     //looping dari tiap user yang ada
     while (parking_user.plate_number !== "") {
       //variable untuk menyimpan booking list dari tiap user
       const orders_user = parking_user.order_list;
-      console.log("ORDERS_USER", orders_user);
-      console.log("PARKING_USER", parking_user);
+
       //insert parking_user ke database
       await pool.query(
         `INSERT INTO parking_users (user_id, plat_number, balance, nik, username, phone_number) VALUES ('${parking_user.user_id}','${parking_user.plate_number}', '${parking_user.balance}', '${parking_user.nik}', '${parking_user.username}', '${parking_user.phone_number}') RETURNING *`
       );
-      console.log("MASUK SINI GA");
+
       //dari tiap user, dilooping lagi dari order_list
       for (let i = 0; i < orders_user.length; i++) {
         //menyimpan hasil getOrderDetail (function blockchain) ke variable getOrder
         const getOrder = await getOrderDetail(orders_user[i]);
-        const getOrderIndex2 = await getOrderDetail(2);
-        console.log("GETORDERINDEX2", getOrderIndex2);
+
         const booking_id = orders_user[i];
-        console.log("MASUK SINI?");
+
         //convert waktu time_enter dan time_exit dalam bentuk timestamp YY-MM-DD hh-mm-ss
         const time_enter_unixTimeStamp = getOrder.time_enter;
         const time_exit_unixTimeStamp = getOrder.time_exit;
-        console.log("MASUK GA BOY");
+
         //mengubah unixtimestamp menjadi timestamp
         const dateEnter = new Date(time_enter_unixTimeStamp * 1000);
         const dateExit = new Date(time_exit_unixTimeStamp * 1000);
-        console.log("MASUK GA GAGAK");
+
         //mendapatkan waktu dalam jam, menit, dan detik
         const hoursEnter = dateEnter.getHours();
         const minutesEnter = dateEnter.getMinutes();
@@ -196,8 +194,7 @@ app.post("/retrieveBlockchain", async (req, res) => {
           1: "PAID",
           0: "NOT PAID",
         };
-        console.log("MASUK GUA");
-        console.log("GET ORDER", getOrder);
+
         //query insert orders_detail ke db
         await pool.query(
           `INSERT INTO orders_detail (booking_id, user_id, time_enter, time_exit, price, status) VALUES ('${booking_id}','${
@@ -207,7 +204,7 @@ app.post("/retrieveBlockchain", async (req, res) => {
           }') RETURNING *`
         );
       }
-      console.log("MASUK GA BRUH");
+
       //Menyesuaikan sequence primary key dari masing-masing tabel di database
       await pool.query(
         `SELECT setval('parking_users_user_id_seq', (SELECT MAX(user_id) FROM parking_users)+1);`
