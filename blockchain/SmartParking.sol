@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.7;
+pragma solidity 0.8.17;
 
 contract SmartParking {
     address public admin;
@@ -37,59 +37,6 @@ contract SmartParking {
         uint256 time_exit;
         uint256 price;
         Status status;
-    }
-
-    function getUserInfo(
-        uint256 _user_id
-    )
-        public
-        view
-        onlyAdmin
-        returns (
-            uint256 user_id,
-            uint256 balance,
-            string memory plate_number,
-            string memory nik,
-            string memory username,
-            string memory phone_number,
-            uint256[] memory order_id
-        )
-    {
-        return (
-            users[_user_id].user_id,
-            users[_user_id].balance,
-            users[_user_id].plate_number,
-            users[_user_id].nik,
-            users[_user_id].username,
-            users[_user_id].phone_number,
-            users[_user_id].order_id
-        );
-    }
-
-    function getOrderDetail(
-        uint256 _order_id
-    )
-        public
-        view
-        onlyAdmin
-        returns (
-            uint256 user_id,
-            uint256 time_enter,
-            uint256 time_exit,
-            uint256 price,
-            Status status
-        )
-    {
-        Order storage order = orders[_order_id];
-        require(order.time_enter != 0, "not check in yet");
-        require(order.time_exit != 0, "not check out yet");
-        return (
-            order.user_id,
-            order.time_enter,
-            order.time_exit,
-            order.price,
-            order.status
-        );
     }
 
     function userRegister(
@@ -142,7 +89,7 @@ contract SmartParking {
         Order storage order = orders[_order_id];
         User storage user = users[order.user_id];
 
-        require(order.user_id != 0, "Not checkIn yet");
+        require(order.user_id != 0, "Not check in yet");
         require(
             _time_exit > order.time_enter,
             "Time exit must greater than enter"
@@ -153,5 +100,60 @@ contract SmartParking {
         order.time_exit = _time_exit;
         order.price = _price;
         order.status = Status.PAID;
+    }
+
+    function getUserInfo(
+        uint256 _user_id
+    )
+        public
+        view
+        onlyAdmin
+        returns (
+            uint256 user_id,
+            uint256 balance,
+            string memory plate_number,
+            string memory nik,
+            string memory username,
+            string memory phone_number,
+            uint256[] memory order_id
+        )
+    {
+        User storage user = users[_user_id];
+        require(user.user_id != 0, "User does not exist");
+        return (
+            user.user_id,
+            user.balance,
+            user.plate_number,
+            user.nik,
+            user.username,
+            user.phone_number,
+            user.order_id
+        );
+    }
+
+    function getOrderDetail(
+        uint256 _order_id
+    )
+        public
+        view
+        onlyAdmin
+        returns (
+            uint256 user_id,
+            uint256 time_enter,
+            uint256 time_exit,
+            uint256 price,
+            Status status
+        )
+    {
+        Order storage order = orders[_order_id];
+        require(order.time_enter != 0, "Not check in yet");
+        require(order.time_exit != 0, "Not check out yet");
+        return (
+            order.user_id,
+            order.time_enter,
+            order.time_exit,
+            order.price,
+            order.status
+        );
     }
 }
