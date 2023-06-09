@@ -18,6 +18,8 @@ pt.pytesseract.tesseract_cmd = r'C:/Users/ACER/AppData/Local/Tesseract-OCR/tesse
 # C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/.env/Lib/site-packages/pytesseract/pytesseract
 
 # net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH\CODE/TA/TA-PLATE-RECOG/Epoch600/yolov5/runs/train/exp/weights/best.onnx')
+# net = cv2.dnn.readNetFromONNX('C:/Users/ACER/yolov5/runs/train/Model15/weights/best.onnx')
+
 
 net = cv2.dnn.readNetFromONNX('C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/yolomodel/1.3000-512/yolov5/runs/train/exp/weights/best.onnx')
 
@@ -96,11 +98,14 @@ def screenshot_object(image, index, bbox, confidences_np):
                 filename = f'plate_{image_counter}.jpg'
                 image_counter += 1
 
-                cv2.imwrite(filename, crop_img)
+                # cv2.imwrite(filename, crop_img)
                 plate_saved[i] = True
                 # print(plate_saved)
 
     return crop_img
+
+
+
 
 
 
@@ -144,7 +149,7 @@ def yolo_predictions(image, net):
 
     
 
-def get_plate_number(image):
+#def get_plate_number(image):
     image_th = image
 
     # Konversi ke citra grayscale
@@ -152,11 +157,45 @@ def get_plate_number(image):
 
     # Thresholding value dengan cv.threshold
     thresh_value, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
-    cv2.imshow("thresh", thresh)
-    get_plate = pt.image_to_string(thresh, config='--psm 8')
+    # cv2.imshow("thresh", thresh)
+
     regex = "^[A-Z]{1,2}\s?[0-9]{1,4}\s?[A-Z]{1,3}$"
+
+
+        # Operasi dilasi
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    dilated = cv2.dilate(thresh, kernel, iterations=1)
+
+    # # Deteksi tepi dengan Canny edge detection
+    # edges = cv2.Canny(dilated, 100, 200)
+
+    # # # Temukan kontur pada gambar
+    # contours, hierarchy = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    try:
+        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    except:
+        ret_img, contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    sorted_contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0])
+
+        # Loop melalui setiap kontur dan ekstrak wilayah yang relevan
+
+    get_plate = pt.image_to_string(thresh, config='--psm 8')
+    print("get_plate: ", get_plate)
     
     ocr_plate_number = re.match(regex, get_plate)
+    # print("ocr_plate_number: ", ocr_plate_number)
+
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        
+        # Pastikan wilayah memiliki aspek rasio yang tepat untuk sebuah karakter
+        aspect_ratio = w / h
+        if 0.2 <= aspect_ratio <= 1.5:
+            # Gambar kotak di sekitar kontur untuk visualisasi
+            cv2.rectangle(thresh, (x, y), (x+w, y+h), (0, 255, 0), 2)    
+
+    cv2.imshow("thresh", thresh)
 
     if ocr_plate_number:
         return ocr_plate_number.group()
@@ -164,7 +203,90 @@ def get_plate_number(image):
         return None
     
 
+def get_plate_number(image):
+    image_th = image
 
+    # Convert to grayscale image
+    gray = cv2.cvtColor(image_th, cv2.COLOR_BGR2GRAY)
+
+    # Apply thresholding using cv.threshold
+    thresh_value, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    # cv2.imshow("thresh", thresh)
+
+    regex = r"^[A-Z]{1,2}\s?\d{1,4}\s?[A-Z]{1,3}$"
+
+    # Perform dilation
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    dilated = cv2.dilate(thresh, kernel, iterations=1)
+
+    try:
+        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    except:
+        ret_img, contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    sorted_contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0])
+
+    im2 = gray.copy()
+
+    plate_num = []
+    for cnt in sorted_contours:
+        x, y, w, h = cv2.boundingRect(cnt)
+        height, width = im2.shape
+
+        # if height of box is not a quarter of total height then skip
+        if height / float(h) > 6:
+            continue
+        ratio = h / float(w)
+        # if height to width ratio is less than 1.5 skip
+        if ratio < 1.5:
+            continue
+        area = h * w
+        # if width is not more than 25 pixels skip
+        if width / float(w) > 15:
+            continue
+        # if area is less than 100 pixels skip
+        if area < 100:
+            continue
+
+        # Adjust the ROI coordinates to ensure they are within the image bounds
+        rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        roi_offset = 5  # Nilai offset
+        roi = thresh[y - roi_offset : y + h + roi_offset, x - roi_offset : x + w + roi_offset]
+
+        roi = cv2.bitwise_not(roi)
+
+        # Check if roi is empty or invalid
+        if roi is None or roi.size == 0:
+            continue
+
+        roi = cv2.medianBlur(roi, 5)
+
+        text = pt.image_to_string(
+            roi, config="-c tessedit_char_whitelist=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ --psm 8 --oem 3"
+        )
+        aspect_ratio = w / h
+        if 0.2 <= aspect_ratio <= 1.5:
+            # Gambar kotak di sekitar kontur untuk visualisasi
+            cv2.rectangle(thresh, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # print(text)
+        plate_num.append(text.strip())  # Menghapus karakter whitespace di awal dan akhir string
+
+    cv2.imshow("Character's Segmented", im2)
+    cv2.imshow("thresh", thresh)
+    plate_num_str = "".join(plate_num)  # Menggabungkan karakter-karakter tanpa spasi
+    # print(plate_num_str)
+    # Mencocokkan dengan regex
+    matches = re.match(regex, plate_num_str)
+    if matches:
+        plate_num_str = " ".join(matches[0].split())
+        formatted_plate_num = re.sub(r"(\d+)", r" \1 ", plate_num_str).strip()
+        print(formatted_plate_num)
+        return formatted_plate_num
+
+    else:
+        return None
+
+    
+    # return formatted_plate_num
 
 
 def save_plate_in_csv(last_plate, get_plate, time_in):
@@ -192,24 +314,24 @@ def save_plate_in_csv(last_plate, get_plate, time_in):
             # time.sleep(2)
 
 
-        status_code, response_text = push_data_in_api(last_plate, get_plate)
+        # status_code, response_text = push_data_in_api(last_plate, get_plate)
 
-        while status_code == 503:
-            print("Error pushing data to API. Retrying in 2 seconds...")
-            time.sleep(2)
-            status_code, response_text = push_data_in_api(last_plate, get_plate)
+        # while status_code == 503:
+        #     print("Error pushing data to API. Retrying in 2 seconds...")
+        #     time.sleep(2)
+        #     status_code, response_text = push_data_in_api(last_plate, get_plate)
 
         with open('vehicle_in.csv', 'r') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
 
 
-        for row in rows:
-            if row['plate_number'] == get_plate:
-                row['status'] = 1 if status_code == 201 else 0
-                row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+        # for row in rows:
+        #     if row['plate_number'] == get_plate:
+        #         row['status'] = 1 if status_code == 201 else 0
+        #         row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
 
-        time.sleep(2)
+        # time.sleep(2)
 
         with open('vehicle_in.csv', 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
@@ -318,22 +440,22 @@ def match_plate_out(get_plate, time_out):
                 w = csv.DictWriter(f, plate_dict.keys())
                 w.writerow(plate_dict)
 
-            status_code, response_text = push_data_out_api(get_plate)
+            # status_code, response_text = push_data_out_api(get_plate)
 
-            while status_code == 503:
-                print("Error pushing data to API. Retrying in 2 seconds...")
-                time.sleep(2)
-                status_code, response_text = push_data_out_api(get_plate)
+            # while status_code == 503:
+            #     print("Error pushing data to API. Retrying in 2 seconds...")
+            #     time.sleep(2)
+            #     status_code, response_text = push_data_out_api(get_plate)
 
             with open('vehicle_out.csv', 'r') as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
 
-            for row in rows:
-                if row['plate_number'] == get_plate:
-                    row['status'] = 1 if status_code == 201 else 0
-                    row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
-                    row['time_out'] = time_out  
+            # for row in rows:
+            #     if row['plate_number'] == get_plate:
+            #         row['status'] = 1 if status_code == 201 else 0
+            #         row['response_text'] = "success" if status_code == 201 else "unauth" if status_code == 401 else "error" if status_code == 404 else "internal server error"
+            #         row['time_out'] = time_out  
 
             with open('vehicle_out.csv', 'w', newline='') as f:
                 writer = csv.DictWriter(f, fieldnames=plate_dict.keys())
@@ -476,7 +598,7 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         cv2.putText(image, f'{confidences_np[i]:.2f}', (x1,y1-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 2)
         # cv2.putText(image,plate_text,(x1,y1+h+27),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,255,0),1)
 
-        
+        # print("Plate number: ", get_plate)
 
         # ----------------------------------------PLATE IN-------------------------------------------------------
 
@@ -487,16 +609,16 @@ def draw_boxes(image, index, boxes_np, confidences_np):
         #     save_plate_in = save_plate_in_csv(last_plate, get_plate, time_in)
         #     last_plate = get_plate 
 
-
+# 
         # -----------------------------------------PLATE OUT-----------------------------------------------------
 
-        time_out = time_exit(image, boxes_np[i])
-        last_plate_out = get_last_plate_out()
-        # PUSH DATA TO API FOR PLATE OUT
-        if get_plate is not None:
-            save_plate_out = match_plate_out(get_plate, time_out)
-            # push_data_out_api(last_plate_out, get_plate)
-            last_plate_out = get_plate
+        # time_out = time_exit(image, boxes_np[i])
+        # last_plate_out = get_last_plate_out()
+        # # PUSH DATA TO API FOR PLATE OUT
+        # if get_plate is not None:
+        #     save_plate_out = match_plate_out(get_plate, time_out)
+        #     # push_data_out_api(last_plate_out, get_plate)
+        #     last_plate_out = get_plate
         
         # ------------------------------------------------------------------------------------------------------
 
@@ -508,7 +630,11 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 
 # MAIN
 def main():
-    cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('C:/Ilham/KULIAH/STI/Sem 8/Tugas Akhir 2/test.mp4')
+
+    # cap = cv2.imread('C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/DATASET/11. dataset-fix-real-bismillah-ya Allah/fix-bismillah-ya Allah/tambahan-test-valid\3/roboflow/train/images/IMG-20180108-WA0114_jpg.rf.6f72a5057d3c49a01acd56c3a1f2b9a4.jpg')
+
     while True:
 
         ret, frame = cap.read()
@@ -529,7 +655,7 @@ def main():
     cv2.destroyAllWindows()
     cap.release()
 
-
+# 
 
 
 
