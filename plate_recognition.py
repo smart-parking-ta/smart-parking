@@ -207,22 +207,28 @@ def get_plate_number(image):
     image_th = image
 
     # Convert to grayscale image
-    gray = cv2.cvtColor(image_th, cv2.COLOR_BGR2GRAY)
+
+    try:
+        gray = cv2.cvtColor(image_th, cv2.COLOR_BGR2GRAY)
+    except cv2.error as e:
+        # print("Error converting image to grayscale:", str(e))
+        return None
 
     # Apply thresholding using cv.threshold
-    thresh_value, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+    
+    thresh_value, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
     # cv2.imshow("thresh", thresh)
+    # thresh_value2, thresh2 = cv2.threshold(thresh1, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
 
     regex = r"^[A-Z]{1,2}\s?\d{1,4}\s?[A-Z]{1,3}$"
 
     # Perform dilation
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    dilated = cv2.dilate(thresh, kernel, iterations=1)
-
+    dilated = cv2.dilate(thresh1, kernel, iterations=1)
     try:
-        contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     except:
-        ret_img, contours, hierarchy = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        ret_img, contours, hierarchy = cv2.findContours(thresh1, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
     sorted_contours = sorted(contours, key=lambda ctr: cv2.boundingRect(ctr)[0])
 
     im2 = gray.copy()
@@ -230,29 +236,31 @@ def get_plate_number(image):
     plate_num = []
     for cnt in sorted_contours:
         x, y, w, h = cv2.boundingRect(cnt)
+        # print("x, y, w, h: ", x, y, w, h)
         height, width = im2.shape
+        # print("height, width: ", height, width)
 
         # if height of box is not a quarter of total height then skip
         if height / float(h) > 6:
             continue
         ratio = h / float(w)
         # if height to width ratio is less than 1.5 skip
-        if ratio < 1.5:
+        if ratio < 1:
             continue
         area = h * w
         # if width is not more than 25 pixels skip
-        if width / float(w) > 15:
+        if width / float(w) > 100:
             continue
         # if area is less than 100 pixels skip
-        if area < 100:
+        if area < 150:
             continue
 
         # Adjust the ROI coordinates to ensure they are within the image bounds
         rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
         roi_offset = 5  # Nilai offset
-        roi = thresh[y - roi_offset : y + h + roi_offset, x - roi_offset : x + w + roi_offset]
+        roi = thresh1[y - roi_offset : y + h + roi_offset, x - roi_offset : x + w + roi_offset]
 
-        roi = cv2.bitwise_not(roi)
+        # roi = cv2.bitwise_not(roi)
 
         # Check if roi is empty or invalid
         if roi is None or roi.size == 0:
@@ -266,12 +274,19 @@ def get_plate_number(image):
         aspect_ratio = w / h
         if 0.2 <= aspect_ratio <= 1.5:
             # Gambar kotak di sekitar kontur untuk visualisasi
-            cv2.rectangle(thresh, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.rectangle(thresh1, (x, y), (x + w, y + h), (0, 255, 0), 2)
         # print(text)
         plate_num.append(text.strip())  # Menghapus karakter whitespace di awal dan akhir string
+        try:
+            cv2.imshow("roi", roi)
+        except:
+            pass
+
+        # cv2.imshow(f"ROI {text}", roi)
+
 
     cv2.imshow("Character's Segmented", im2)
-    cv2.imshow("thresh", thresh)
+    cv2.imshow("thresh", thresh1)
     plate_num_str = "".join(plate_num)  # Menggabungkan karakter-karakter tanpa spasi
     # print(plate_num_str)
     # Mencocokkan dengan regex
@@ -279,14 +294,19 @@ def get_plate_number(image):
     if matches:
         plate_num_str = " ".join(matches[0].split())
         formatted_plate_num = re.sub(r"(\d+)", r" \1 ", plate_num_str).strip()
-        print(formatted_plate_num)
-        return formatted_plate_num
+        print(plate_num_str)
+        print(formatted_plate_num, "\n")
+        return plate_num_str
 
     else:
         return None
 
     
-    # return formatted_plate_num
+
+
+
+
+
 
 
 def save_plate_in_csv(last_plate, get_plate, time_in):
@@ -631,7 +651,7 @@ def draw_boxes(image, index, boxes_np, confidences_np):
 # MAIN
 def main():
     # cap = cv2.VideoCapture(0)
-    cap = cv2.VideoCapture('C:/Ilham/KULIAH/STI/Sem 8/Tugas Akhir 2/test.mp4')
+    cap = cv2.VideoCapture('C:/Ilham/KULIAH/STI/Sem 8/Tugas Akhir 2/test_baru_4.mp4')
 
     # cap = cv2.imread('C:/Ilham/KULIAH/CODE/TA/TA-PLATE-RECOG/DATASET/11. dataset-fix-real-bismillah-ya Allah/fix-bismillah-ya Allah/tambahan-test-valid\3/roboflow/train/images/IMG-20180108-WA0114_jpg.rf.6f72a5057d3c49a01acd56c3a1f2b9a4.jpg')
 
