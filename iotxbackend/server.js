@@ -187,22 +187,32 @@ app.post("/retrieveBlockchain", async (req, res) => {
         const dateTimeEnter = `${yearEnter}-${monthEnter}-${dayEnter} ${timeEnter}`;
         const dateTimeExit = `${yearExit}-${monthExit}-${dayExit} ${timeExit}`;
 
-        //query untuk insert ke database
-
         //hash map untuk mengconvert data status paid/ not paid dari blockchain yg merupakan enum 1 atau 0 menjadi "PAID" atau "NOT PAID"
         const hashPaidNotPaid = {
           1: "PAID",
           0: "NOT PAID",
         };
 
-        //query insert orders_detail ke db
-        await pool.query(
-          `INSERT INTO orders_detail (booking_id, user_id, time_enter, time_exit, price, status) VALUES ('${booking_id}','${
-            getOrder.user_id
-          }', '${dateTimeEnter}', '${dateTimeExit}', '${getOrder.price}','${
-            hashPaidNotPaid[getOrder.status]
-          }') RETURNING *`
-        );
+        //pengecekan apakah waktu exit di database terakhir kali adalah null
+        if (time_exit_unixTimeStamp == 0) {
+          //query insert orders_detail ke db
+          await pool.query(
+            `INSERT INTO orders_detail (booking_id, user_id, time_enter, price, status) VALUES ('${booking_id}','${
+              getOrder.user_id
+            }', '${dateTimeEnter}', '${getOrder.price}','${
+              hashPaidNotPaid[getOrder.status]
+            }') RETURNING *`
+          );
+        } else {
+          //query insert orders_detail ke db
+          await pool.query(
+            `INSERT INTO orders_detail (booking_id, user_id, time_enter, time_exit, price, status) VALUES ('${booking_id}','${
+              getOrder.user_id
+            }', '${dateTimeEnter}', '${dateTimeExit}', '${getOrder.price}','${
+              hashPaidNotPaid[getOrder.status]
+            }') RETURNING *`
+          );
+        }
       }
 
       //Menyesuaikan sequence primary key dari masing-masing tabel di database
@@ -216,7 +226,9 @@ app.post("/retrieveBlockchain", async (req, res) => {
 
       //beralih ke indeks berikutnya pada parking user index
       user_id++;
+      console.log("userID", user_id);
       parking_user = await getUserOrderInfo(user_id);
+      console.log("parking_user", parking_user);
     }
 
     // Drawbacks dari algoritma di atas adalah O(n^2)
@@ -406,7 +418,6 @@ app.post("/login", async (req, res, next) => {
 });
 
 //endpoint untuk login users
-//sementara gausa pake middleware connectMqtt buat tes retrieve blockchain
 app.post(
   "/checkIn",
   connectMqtt,
