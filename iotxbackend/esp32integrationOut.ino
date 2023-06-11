@@ -138,6 +138,21 @@ bool includeString(char text[], char searchString[])
     }
 }
 
+void oledDisplay(char text[])
+{
+    oled.clearDisplay();
+    oled.setCursor(0, 2);
+    oled.println(text);
+    oled.display();
+}
+
+void oledReset()
+{
+    oled.clearDisplay();
+    oled.println("");
+    oled.display();
+}
+
 void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
     Serial.println("Publish received.");
@@ -158,28 +173,7 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
     Serial.println(" payload ");
     Serial.println(payload);
 
-    if (strcmp(topic, "backend/checkIn") == 0)
-    {
-        if (includeString(payload, "OPEN"))
-        {
-            barrierOpen();
-            checkInPass = true;
-        }
-        else if (includeString(payload, "CLOSE"))
-        {
-            checkInPass = false;
-            barrierClosed();
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
-        }
-        else
-        {
-            Serial.println("there is no condition for this payload input");
-        }
-    }
-
-    else if (strcmp(topic, "backend/checkOut") == 0)
+    if (strcmp(topic, "backend/checkOut") == 0)
     {
         if (includeString(payload, "OPEN"))
         {
@@ -190,136 +184,49 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         {
             checkOutPass = false;
             barrierClosed();
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else
         {
             Serial.println("there is no condition for this payload input");
         }
     }
-    else if (strcmp(topic, "esp32/oledIn") == 0)
-    {
-        if (includeString(payload, "201"))
-        {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.print("check-in berhasil");
-            oled.display();
-        }
-        else if (includeString(payload, "400"))
-        {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Bad Request");
-            oled.display();
-            delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
-        }
-        else if (includeString(payload, "401"))
-        {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Unauthorized User");
-            oled.display();
-            delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
-        }
-        else if (includeString(payload, "403"))
-        {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("User Already In");
-            oled.display();
-            delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
-        }
-        else if (includeString(payload, "500"))
-        {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Internal Server Error");
-            oled.display();
-            delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
-        }
-        else
-        {
-            Serial.println("there is no condition for this payload input");
-        }
-    }
+
     else if (strcmp(topic, "esp32/oledOut") == 0)
     {
         if (includeString(payload, "201"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.print("check-out berhasil");
-            oled.display();
+            oledDisplay("check-out berhasil");
         }
         else if (includeString(payload, "400"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Bad Request");
-            oled.display();
+            oledDisplay("Bad Request");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "401"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Unauthorized User");
-            oled.display();
+            oledDisplay("Unauthorized User");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "402"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Saldo tidak cukup");
-            oled.display();
+            oledDisplay("Saldo tidak cukup");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "404"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("There is no booking data from the user");
-            oled.display();
+            oledDisplay("There is no booking data from the user");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "500"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Internal Server Error");
-            oled.display();
+            oledDisplay("Internal Server Error");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else
         {

@@ -138,6 +138,21 @@ bool includeString(char text[], char searchString[])
     }
 }
 
+void oledDisplay(char text[])
+{
+    oled.clearDisplay();
+    oled.setCursor(0, 2);
+    oled.println(text);
+    oled.display();
+}
+
+void oledReset()
+{
+    oled.clearDisplay();
+    oled.println("");
+    oled.display();
+}
+
 void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties properties, size_t len, size_t index, size_t total)
 {
     Serial.println("Publish received.");
@@ -169,9 +184,7 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         {
             checkInPass = false;
             barrierClosed();
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else
         {
@@ -179,64 +192,29 @@ void onMqttMessage(char *topic, char *payload, AsyncMqttClientMessageProperties 
         }
     }
 
-    else if (strcmp(topic, "backend/checkOut") == 0)
-    {
-        if (includeString(payload, "OPEN"))
-        {
-            barrierOpen();
-            checkOutPass = true;
-        }
-        else if (includeString(payload, "CLOSE"))
-        {
-            checkOutPass = false;
-            barrierClosed();
-        }
-        else
-        {
-            Serial.println("there is no condition for this payload input");
-        }
-    }
     else if (strcmp(topic, "esp32/oledIn") == 0)
     {
         if (includeString(payload, "201"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.print("check-in berhasil");
-            oled.display();
+            oledDisplay("check-in berhasil");
         }
         else if (includeString(payload, "400"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Bad Request");
-            oled.display();
+            oledDisplay("Bad Request");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "401"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("Unauthorized User");
-            oled.display();
+            oledDisplay("Unauthorized User");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else if (includeString(payload, "403"))
         {
-            oled.clearDisplay();
-            oled.setCursor(0, 2);
-            oled.println("User Already In");
-            oled.display();
+            oledDisplay("User Already In");
             delay(1500);
-            oled.clearDisplay();
-            oled.println("");
-            oled.display();
+            oledReset();
         }
         else
         {
