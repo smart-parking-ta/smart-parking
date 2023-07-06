@@ -5,7 +5,7 @@ const web3 = new Web3(
 );
 require("dotenv").config();
 
-const contractAddress = "0xb4E445733eFb2459954B3De20F737F0B5350bCe0";
+const contractAddress = "0xB00ec17728A822ad48AF2BC1be8d9dB7d4572C8A";
 const privateKey = process.env.PRIVATE_KEY;
 web3.eth.accounts.wallet.add(privateKey);
 const accountAddress = web3.eth.accounts.wallet[0].address;
@@ -69,7 +69,6 @@ const topUpBalance = async (user_id, amount) => {
 
 const addOrder = async (user_id, order_id, time_enter) => {
   try {
-    //ngga ada parameter price karena dari fungsi blockchain itu udah add 4000
     const tx = {
       from: accountAddress,
       to: contractAddress,
